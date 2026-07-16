@@ -1,12 +1,346 @@
+--- net/minecraft/src/DedicatedServer.java
++++ net/minecraft/src/DedicatedServer.java
+@@ -30,7 +30,7 @@
+ 		DedicatedServerCommandThread var1 = new DedicatedServerCommandThread(this);
+ 		var1.setDaemon(true);
+ 		var1.start();
+-		this.getLogAgent().logInfo("Starting minecraft server version 1.5.2");
++		this.getLogAgent().logInfo("Starting minecraft server version " + this.getMinecraftVersion());
+ 		if(Runtime.getRuntime().maxMemory() / 1024L / 1024L < 512L) {
+ 			this.getLogAgent().logWarning("To start the server with more ram, launch it as \"java -Xmx1024M -Xms1024M -jar minecraft_server.jar\"");
+ 		}
+--- /dev/null
++++ net/minecraft/src/EntityNONO.java
+@@ -1,0 +1,69 @@
++package net.minecraft.src;
++
++public class EntityNONO extends EntitySheep {
++
++    public EntityNONO(World world) {
++        super(world);
++        this.texture = "/addmob/NONO.png";
++        this.moveSpeed = 0.25F;
++        
++        // Clear passive tasks
++        try {
++            java.lang.reflect.Field field = EntityAITasks.class.getDeclaredField("taskEntries");
++            field.setAccessible(true);
++            ((java.util.List) field.get(this.tasks)).clear();
++            ((java.util.List) field.get(this.targetTasks)).clear();
++        } catch (Exception e) {
++            e.printStackTrace();
++        }
++        
++        // Add hostile AI tasks
++        this.tasks.addTask(0, new EntityAISwimming(this));
++        this.tasks.addTask(1, new EntityAIAttackOnCollide(this, EntityPlayer.class, 0.3F, false));
++        this.tasks.addTask(2, new EntityAIWander(this, 0.2F));
++        this.tasks.addTask(3, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
++        this.tasks.addTask(4, new EntityAILookIdle(this));
++        
++        this.targetTasks.addTask(1, new EntityAIHurtByTarget(this, true));
++        this.targetTasks.addTask(2, new EntityAINearestAttackableTarget(this, EntityPlayer.class, 16.0F, 0, true));
++    }
++
++    @Override
++    public boolean interact(EntityPlayer player) {
++        // Prevent shearing
++        return false;
++    }
++
++    @Override
++    protected void dropFewItems(boolean var1, int var2) {
++        super.dropFewItems(var1, var2);
++        
++        // Drop mutton (pork/beef)
++        int amount = this.rand.nextInt(3) + 1 + this.rand.nextInt(1 + var2);
++        for (int i = 0; i < amount; i++) {
++            if (this.isBurning()) {
++                this.dropItem(Item.porkCooked.itemID, 1);
++            } else {
++                this.dropItem(Item.porkRaw.itemID, 1);
++            }
++        }
++    }
++
++    @Override
++    public boolean attackEntityAsMob(Entity target) {
++        return target.attackEntityFrom(DamageSource.causeMobDamage(this), 2);
++    }
++
++    @Override
++    public void onUpdate() {
++        super.onUpdate();
++        if (!this.worldObj.isRemote && this.isEntityInsideOpaqueBlock()) {
++            for (double checkY = 0.5D; checkY <= 3.0D; checkY += 0.5D) {
++                if (!this.worldObj.isBlockNormalCube(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.posY + this.getEyeHeight() + checkY), MathHelper.floor_double(this.posZ))) {
++                    this.setPosition(this.posX, this.posY + checkY, this.posZ);
++                    break;
++                }
++            }
++        }
++    }
++}
+--- /dev/null
++++ net/minecraft/src/EntityTheWatcher.java
+@@ -1,0 +1,48 @@
++package net.minecraft.src;
++
++public class EntityTheWatcher extends EntityCow {
++
++    public EntityTheWatcher(World world) {
++        super(world);
++        this.texture = "/addmob/the_watcher.png";
++        this.moveSpeed = 0.25F;
++        
++        // Clear passive tasks
++        try {
++            java.lang.reflect.Field field = EntityAITasks.class.getDeclaredField("taskEntries");
++            field.setAccessible(true);
++            ((java.util.List) field.get(this.tasks)).clear();
++            ((java.util.List) field.get(this.targetTasks)).clear();
++        } catch (Exception e) {
++            e.printStackTrace();
++        }
++        
++        // Add hostile AI tasks
++        this.tasks.addTask(0, new EntityAISwimming(this));
++        this.tasks.addTask(1, new EntityAIAttackOnCollide(this, EntityPlayer.class, 0.3F, false));
++        this.tasks.addTask(2, new EntityAIWander(this, 0.2F));
++        this.tasks.addTask(3, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
++        this.tasks.addTask(4, new EntityAILookIdle(this));
++        
++        this.targetTasks.addTask(1, new EntityAIHurtByTarget(this, true));
++        this.targetTasks.addTask(2, new EntityAINearestAttackableTarget(this, EntityPlayer.class, 16.0F, 0, true));
++    }
++
++    @Override
++    public boolean attackEntityAsMob(Entity target) {
++        return target.attackEntityFrom(DamageSource.causeMobDamage(this), 3);
++    }
++
++    @Override
++    public void onUpdate() {
++        super.onUpdate();
++        if (!this.worldObj.isRemote && this.isEntityInsideOpaqueBlock()) {
++            for (double checkY = 0.5D; checkY <= 3.0D; checkY += 0.5D) {
++                if (!this.worldObj.isBlockNormalCube(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.posY + this.getEyeHeight() + checkY), MathHelper.floor_double(this.posZ))) {
++                    this.setPosition(this.posX, this.posY + checkY, this.posZ);
++                    break;
++                }
++            }
++        }
++    }
++}
+--- /dev/null
++++ net/minecraft/src/EntityIrregularity.java
+@@ -1,0 +1,48 @@
++package net.minecraft.src;
++
++public class EntityIrregularity extends EntityChicken {
++
++    public EntityIrregularity(World world) {
++        super(world);
++        this.texture = "/addmob/irregularity.png";
++        this.moveSpeed = 0.3F; // fast speed
++        
++        // Clear passive tasks
++        try {
++            java.lang.reflect.Field field = EntityAITasks.class.getDeclaredField("taskEntries");
++            field.setAccessible(true);
++            ((java.util.List) field.get(this.tasks)).clear();
++            ((java.util.List) field.get(this.targetTasks)).clear();
++        } catch (Exception e) {
++            e.printStackTrace();
++        }
++        
++        // Add hostile AI tasks
++        this.tasks.addTask(0, new EntityAISwimming(this));
++        this.tasks.addTask(1, new EntityAIAttackOnCollide(this, EntityPlayer.class, this.moveSpeed, false));
++        this.tasks.addTask(2, new EntityAIWander(this, this.moveSpeed));
++        this.tasks.addTask(3, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
++        this.tasks.addTask(4, new EntityAILookIdle(this));
++        
++        this.targetTasks.addTask(1, new EntityAIHurtByTarget(this, true));
++        this.targetTasks.addTask(2, new EntityAINearestAttackableTarget(this, EntityPlayer.class, 16.0F, 0, true));
++    }
++
++    @Override
++    public boolean attackEntityAsMob(Entity target) {
++        return target.attackEntityFrom(DamageSource.causeMobDamage(this), 1);
++    }
++
++    @Override
++    public void onUpdate() {
++        super.onUpdate();
++        if (!this.worldObj.isRemote && this.isEntityInsideOpaqueBlock()) {
++            for (double checkY = 0.5D; checkY <= 3.0D; checkY += 0.5D) {
++                if (!this.worldObj.isBlockNormalCube(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.posY + this.getEyeHeight() + checkY), MathHelper.floor_double(this.posZ))) {
++                    this.setPosition(this.posX, this.posY + checkY, this.posZ);
++                    break;
++                }
++            }
++        }
++    }
++}
+--- /dev/null
++++ net/minecraft/src/CommandError173.java
+@@ -1,0 +1,76 @@
++package net.minecraft.src;
++
++public class CommandError173 extends CommandBase {
++
++    @Override
++    public String getCommandName() {
++        return "error173";
++    }
++
++    @Override
++    public int getRequiredPermissionLevel() {
++        return 2;
++    }
++
++    @Override
++    public String getCommandUsage(ICommandSender var1) {
++        return "/error173 <eventId|summon>";
++    }
++
++    @Override
++    public void processCommand(ICommandSender var1, String[] var2) {
++        if (var2.length > 0) {
++            try {
++                // 特殊コマンド: /error173 summon  → WindowsMエンティティを召喚
++                if (var2[0].equalsIgnoreCase("summon")) {
++                    EntityPlayerMP player = getCommandSenderAsPlayer(var1);
++                    if (player != null && player.worldObj != null) {
++                        WorldServer world = (WorldServer) player.worldObj;
++                        EntityWindowsM entity = new EntityWindowsM(world);
++                        entity.setLocationAndAngles(player.posX + 2.0D, player.posY, player.posZ + 2.0D, 0.0F, 0.0F);
++                        world.spawnEntityInWorld(entity);
++                        notifyAdmins(var1, "Spawned Windows M near you.", new Object[0]);
++                    }
++                    return;
++                }
++
++                int eventId = parseInt(var1, var2[0]);
++                
++                EntityPlayerMP player = getCommandSenderAsPlayer(var1);
++                if (player != null && player.worldObj != null) {
++                    WorldServer world = (WorldServer) player.worldObj;
++                    WorldRandomEvent eventManager = world.worldRandomEvent;
++                    switch (eventId) {
++                        case 0: eventManager.event0(player); break;
++                        case 1: eventManager.event1(player); break;
++                        case 2: eventManager.event2(player); break;
++                        case 3: eventManager.event3(player); break;
++                        case 4: eventManager.event4(player); break;
++                        case 5: eventManager.event5(player); break;
++                        case 6: eventManager.event6(player); break;
++                        case 7: eventManager.event7(player); break;
++                        case 8: eventManager.event8(player); break;
++                        case 9: eventManager.event9(player); break;
++                        case 10: eventManager.event10(player); break;
++                        case 11: eventManager.event11(player); break;
++                        case 12: eventManager.event12(player); break;
++                        case 13: eventManager.event13(player); break;
++                        case 14: eventManager.event14(player); break;
++                        case 15: eventManager.event15(player); break;
++                        default:
++                            throw new SyntaxErrorException("Unknown event ID: " + eventId, new Object[0]);
++                    }
++                    notifyAdmins(var1, "Triggered WorldRandomEvent event " + eventId, new Object[0]);
++                }
++            } catch (Exception e) {
++                throw new SyntaxErrorException("Invalid argument. Usage: /error173 <eventId|summon>", new Object[0]);
++            }
++        } else {
++            throw new WrongUsageException("/error173 <eventId|summon>", new Object[0]);
++        }
++    }
++
++    public int compareTo(Object var1) {
++        return this.getCommandName().compareTo(((ICommand)var1).getCommandName());
++    }
++}
 --- net/minecraft/src/EntityList.java
 +++ net/minecraft/src/EntityList.java
-@@ -167,5 +167,6 @@
+@@ -167,5 +167,13 @@
  		addMapping(EntityIronGolem.class, "VillagerGolem", 99);
  		addMapping(EntityVillager.class, "Villager", 120, 5651507, 12422002);
  		addMapping(EntityEnderCrystal.class, "EnderCrystal", 200);
++		addMapping(EntityWindowsM.class, "WindowsM", 100);
++		addMapping(EntityComputerDestroyer.class, "ComputerDestroyer", 101);
++		addMapping(EntityThatThing.class, "ThatThing", 102);
++		addMapping(EntityTheWatcher.class, "TheWatcher", 103, 0x550000, 0x000055);
++		addMapping(EntityNONO.class, "NONO", 104, 0x555555, 0x005500);
++		addMapping(EntityIrregularity.class, "Irregularity", 105, 0x005555, 0x550055);
++		addMapping(EntityUnstable.class, "Unstable", 106, 0x555500, 0x005555);
 +		addMapping(EntityVill.class, "Vill", 107, 0x9c4242, 0xd4a373);
  	}
  }
+--- /dev/null
++++ net/minecraft/src/EntityWindowsM.java
+@@ -1,0 +1,49 @@
++package net.minecraft.src;
++
++public class EntityWindowsM extends EntityError173 {
++
++    public EntityWindowsM(World world) {
++        super(world);
++        this.texture = "/addmob/WindowsM.png";
++        this.moveSpeed = 0.55F;
++
++        // 攻撃・探索AI（プレイヤーを絶えず追跡）
++        this.tasks.addTask(0, new EntityAISwimming(this));
++        this.tasks.addTask(1, new EntityAIAttackOnCollide(this, EntityPlayer.class, this.moveSpeed, false));
++        this.tasks.addTask(2, new EntityAIWander(this, this.moveSpeed));
++        this.tasks.addTask(3, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
++        this.tasks.addTask(4, new EntityAILookIdle(this));
++        this.targetTasks.addTask(1, new EntityAIHurtByTarget(this, true));
++        this.targetTasks.addTask(2, new EntityAINearestAttackableTarget(this, EntityPlayer.class, 16.0F, 0, true));
++    }
++
++    @Override
++    public int getMaxHealth() {
++        return 40;
++    }
++
++    @Override
++    public int getTotalArmorValue() {
++        return 0;
++    }
++
++    @Override
++    public boolean attackEntityFrom(DamageSource source, int amount) {
++        return false;
++    }
++
++    @Override
++    public boolean isEntityInvulnerable() {
++        return true;
++    }
++
++    @Override
++    public String getEntityName() {
++        return "Windows M";
++    }
++
++    @Override
++    public boolean getCanSpawnHere() {
++        return false; // 自然スポーンはしない
++    }
++}
+--- net/minecraft/src/ServerCommandManager.java
++++ net/minecraft/src/ServerCommandManager.java
+@@ -47,6 +47,8 @@
+ 			this.registerCommand(new CommandServerPublishLocal());
+ 		}
+ 
++		this.registerCommand(new CommandError173());
++
+ 		CommandBase.setAdminCommander(this);
+ 	}
+ 
 --- /dev/null
 +++ net/minecraft/src/EntityVill.java
 @@ -1,0 +1,46 @@
@@ -54,5 +388,1124 @@
 +    @Override
 +    protected String getDeathSound() {
 +        return "mob.villager.defaultdeath";
++    }
++}
+--- net/minecraft/src/NetHandler.java
++++ net/minecraft/src/NetHandler.java
+@@ -300,4 +300,12 @@
+ 	public void handleWorldParticles(Packet63WorldParticles var1) {
+ 		this.unexpectedPacket(var1);
+ 	}
++
++	public void handleEvent(Packet80Event var1) {
++		this.unexpectedPacket(var1);
++	}
++
++	public void handleSound(Packet81Sound var1) {
++		this.unexpectedPacket(var1);
++	}
+ }
+--- /dev/null
++++ net/minecraft/src/EntityUnstable.java
+@@ -1,0 +1,62 @@
++package net.minecraft.src;
++
++public class EntityUnstable extends EntityPig {
++    private int explosionTimer = -1;
++
++    public EntityUnstable(World world) {
++        super(world);
++        this.texture = "/addmob/unstable.png";
++        this.moveSpeed = 0.25F;
++        
++        // Clear passive tasks
++        try {
++            java.lang.reflect.Field field = EntityAITasks.class.getDeclaredField("taskEntries");
++            field.setAccessible(true);
++            ((java.util.List) field.get(this.tasks)).clear();
++            ((java.util.List) field.get(this.targetTasks)).clear();
++        } catch (Exception e) {
++            e.printStackTrace();
++        }
++        
++        // Add hostile AI tasks
++        this.tasks.addTask(0, new EntityAISwimming(this));
++        this.tasks.addTask(1, new EntityAIAttackOnCollide(this, EntityPlayer.class, 0.3F, false));
++        this.tasks.addTask(2, new EntityAIWander(this, 0.2F));
++        this.tasks.addTask(3, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
++        this.tasks.addTask(4, new EntityAILookIdle(this));
++        
++        this.targetTasks.addTask(1, new EntityAIHurtByTarget(this, true));
++        this.targetTasks.addTask(2, new EntityAINearestAttackableTarget(this, EntityPlayer.class, 16.0F, 0, true));
++    }
++
++    @Override
++    public void onUpdate() {
++        super.onUpdate();
++        if (!this.worldObj.isRemote) {
++            if (this.isEntityInsideOpaqueBlock()) {
++                for (double checkY = 0.5D; checkY <= 3.0D; checkY += 0.5D) {
++                    if (!this.worldObj.isBlockNormalCube(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.posY + this.getEyeHeight() + checkY), MathHelper.floor_double(this.posZ))) {
++                        this.setPosition(this.posX, this.posY + checkY, this.posZ);
++                        break;
++                    }
++                }
++            }
++            if (this.getHealth() <= 4 && explosionTimer == -1) {
++                explosionTimer = 30; // 1.5s countdown
++                this.playSound("random.fuse", 1.0F, 0.5F);
++            }
++            if (explosionTimer > 0) {
++                explosionTimer--;
++                if (explosionTimer == 0) {
++                    this.worldObj.createExplosion(this, this.posX, this.posY, this.posZ, 2.0F, true);
++                    this.setDead();
++                }
++            }
++        }
++    }
++
++    @Override
++    public boolean attackEntityAsMob(Entity target) {
++        return target.attackEntityFrom(DamageSource.causeMobDamage(this), 3);
++    }
++}
+--- net/minecraft/server/MinecraftServer.java
++++ net/minecraft/server/MinecraftServer.java
+@@ -372,6 +372,7 @@
+ 	}
+ 
+ 	protected void tick() {
++		net.minecraft.src.WorldRollbackManager.tickServer();
+ 		long var1 = System.nanoTime();
+ 		AxisAlignedBB.getAABBPool().cleanPool();
+ 		++this.tickCounter;
+@@ -601,7 +602,7 @@
+ 	}
+ 
+ 	public String getMinecraftVersion() {
+-		return "1.5.2";
++		return "1.5.10 Error 173";
+ 	}
+ 
+ 	public int getCurrentPlayerCount() {
+--- net/minecraft/src/World.java
++++ net/minecraft/src/World.java
+@@ -51,6 +51,7 @@
+ 	private int ambientTickCountdown = this.rand.nextInt(12000);
+ 	int[] lightUpdateBlockList = new int[-Short.MIN_VALUE];
+ 	public boolean isRemote = false;
++	public WorldRandomEvent worldRandomEvent;
+ 
+ 	public BiomeGenBase getBiomeGenForCoords(int var1, int var2) {
+ 		if(this.blockExists(var1, 0, var2)) {
+@@ -116,6 +117,7 @@
+ 		}
+ 
+ 		this.calculateInitialSkylight();
++		this.worldRandomEvent = new WorldRandomEvent(this);
+ 		this.calculateInitialWeather();
+ 	}
+ 
+@@ -1637,6 +1639,9 @@
+ 	}
+ 
+ 	public void tick() {
++		if(!this.isRemote){
++			this.worldRandomEvent.tickEvents();
++		}
+ 		this.updateWeather();
+ 	}
+ 
+--- /dev/null
++++ net/minecraft/src/Packet81Sound.java
+@@ -1,0 +1,32 @@
++package net.minecraft.src;
++
++import java.io.DataInputStream;
++import java.io.DataOutputStream;
++import java.io.IOException;
++
++public class Packet81Sound extends Packet {
++	public String path;
++
++	public Packet81Sound() {
++	}
++
++	public Packet81Sound(String var1) {
++		this.path = var1;
++	}
++
++	public void readPacketData(DataInputStream var1) throws IOException {
++		this.path = var1.readUTF();
++	}
++
++	public void writePacketData(DataOutputStream var1) throws IOException {
++		var1.writeUTF(this.path);
++	}
++
++	public void processPacket(NetHandler var1) {
++		var1.handleSound(this);
++	}
++
++	public int getPacketSize() {
++		return this.path.length();
++	}
++}
+--- /dev/null
++++ net/minecraft/src/Packet80Event.java
+@@ -1,0 +1,32 @@
++package net.minecraft.src;
++
++import java.io.DataInputStream;
++import java.io.DataOutputStream;
++import java.io.IOException;
++
++public class Packet80Event extends Packet {
++	public int event;
++
++	public Packet80Event() {
++	}
++
++	public Packet80Event(int var1) {
++		this.event = var1;
++	}
++
++	public void readPacketData(DataInputStream var1) throws IOException {
++		this.event = var1.readInt();
++	}
++
++	public void writePacketData(DataOutputStream var1) throws IOException {
++		var1.writeInt(this.event);
++	}
++
++	public void processPacket(NetHandler var1) {
++		var1.handleEvent(this);
++	}
++
++	public int getPacketSize() {
++		return this.event;
++	}
++}
+--- net/minecraft/src/EntityPlayer.java
++++ net/minecraft/src/EntityPlayer.java
+@@ -183,6 +183,18 @@
+ 			this.foodStats.onUpdate(this);
+ 		}
+ 
++		if (WorldRandomEvent.isEvent9Active) {
++			double rx = (double) Math.round(this.posX);
++			double ry = (double) Math.round(this.posY);
++			double rz = (double) Math.round(this.posZ);
++			this.setPosition(rx, ry, rz);
++			this.prevPosX = rx;
++			this.prevPosY = ry;
++			this.prevPosZ = rz;
++			this.lastTickPosX = rx;
++			this.lastTickPosY = ry;
++			this.lastTickPosZ = rz;
++		}
+ 	}
+ 
+ 	public int getMaxInPortalTime() {
+--- net/minecraft/src/Packet.java
++++ net/minecraft/src/Packet.java
+@@ -277,6 +277,8 @@
+ 		addIdClassMapping(63, true, false, Packet63WorldParticles.class);
+ 		addIdClassMapping(70, true, false, Packet70GameEvent.class);
+ 		addIdClassMapping(71, true, false, Packet71Weather.class);
++		addIdClassMapping(80, true, true, Packet80Event.class);
++		addIdClassMapping(81, true, true, Packet81Sound.class);
+ 		addIdClassMapping(100, true, false, Packet100OpenWindow.class);
+ 		addIdClassMapping(101, true, true, Packet101CloseWindow.class);
+ 		addIdClassMapping(102, false, true, Packet102WindowClick.class);
+--- /dev/null
++++ net/minecraft/src/EntityComputerDestroyer.java
+@@ -1,0 +1,49 @@
++package net.minecraft.src;
++
++public class EntityComputerDestroyer extends EntityError173 {
++
++    public EntityComputerDestroyer(World world) {
++        super(world);
++        this.texture = "/addmob/ComputerDestroyer.png";
++        this.moveSpeed = 0.65F;
++
++        // プレイヤーを徹底的に追跡
++        this.tasks.addTask(0, new EntityAISwimming(this));
++        this.tasks.addTask(1, new EntityAIAttackOnCollide(this, EntityPlayer.class, this.moveSpeed, false));
++        this.tasks.addTask(2, new EntityAIWander(this, this.moveSpeed));
++        this.tasks.addTask(3, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
++        this.tasks.addTask(4, new EntityAILookIdle(this));
++        this.targetTasks.addTask(1, new EntityAIHurtByTarget(this, true));
++        this.targetTasks.addTask(2, new EntityAINearestAttackableTarget(this, EntityPlayer.class, 16.0F, 0, true));
++    }
++
++    @Override
++    public int getMaxHealth() {
++        return 20;
++    }
++
++    @Override
++    public boolean isEntityInvulnerable() {
++        return true; // 完全無敵
++    }
++
++    @Override
++    public boolean addEntityID(NBTTagCompound tag) {
++        return false; // セーブデータに保存させない
++    }
++
++    @Override
++    public boolean addNotRiddenEntityID(NBTTagCompound tag) {
++        return false; // セーブデータに保存させない
++    }
++
++    @Override
++    protected boolean isAIEnabled() {
++        return true;
++    }
++
++    @Override
++    public String getEntityName() {
++        return "Computer Destroyer";
++    }
++}
+--- net/minecraft/src/NetServerHandler.java
++++ net/minecraft/src/NetServerHandler.java
+@@ -821,6 +821,46 @@
+ 					} else {
+ 						var14.updateItemName("");
+ 					}
++				} else if("WindowsMClose".equals(var1.channel)) {
++					try {
++						var2 = new DataInputStream(new ByteArrayInputStream(var1.data));
++						int entityId = var2.readInt();
++						Entity entity = this.playerEntity.worldObj.getEntityByID(entityId);
++						if (entity instanceof EntityWindowsM || entity instanceof EntityComputerDestroyer) {
++							entity.setDead();
++						}
++					} catch (Exception e) {
++						e.printStackTrace();
++					}
++				} else if("SpawnDestroyer".equals(var1.channel)) {
++					try {
++						WorldServer world = (WorldServer) this.playerEntity.worldObj;
++						EntityComputerDestroyer destroyer = new EntityComputerDestroyer(world);
++						double spawnX = this.playerEntity.posX + (world.rand.nextDouble() - 0.5D) * 2.0D;
++						double spawnY = this.playerEntity.posY;
++						double spawnZ = this.playerEntity.posZ + (world.rand.nextDouble() - 0.5D) * 2.0D;
++						destroyer.setLocationAndAngles(spawnX, spawnY, spawnZ, world.rand.nextFloat() * 360.0F, 0.0F);
++						world.spawnEntityInWorld(destroyer);
++						this.playerEntity.addChatMessage("\u00a74[SYSTEM] Critical breach: Computer Destroyer has entered the grid.");
++					} catch (Exception e) {
++						e.printStackTrace();
++					}
++				} else if("SpawnThatThing".equals(var1.channel)) {
++					try {
++						WorldServer world = (WorldServer) this.playerEntity.worldObj;
++						EntityThatThing thatThing = new EntityThatThing(world);
++						
++						double yawRad = (double) this.playerEntity.rotationYaw * Math.PI / 180.0D;
++						double spawnX = this.playerEntity.posX + Math.sin(yawRad) * 12.0D;
++						double spawnZ = this.playerEntity.posZ - Math.cos(yawRad) * 12.0D;
++						double spawnY = this.playerEntity.posY;
++						
++						thatThing.setLocationAndAngles(spawnX, spawnY, spawnZ, this.playerEntity.rotationYaw, 0.0F);
++						world.spawnEntityInWorld(thatThing);
++						this.playerEntity.addChatMessage("\u00a74[SYSTEM] Warning: Something has heard you.");
++					} catch (Exception e) {
++						e.printStackTrace();
++					}
+ 				}
+ 			}
+ 		}
+--- /dev/null
++++ net/minecraft/src/EntityThatThing.java
+@@ -1,0 +1,82 @@
++package net.minecraft.src;
++
++public class EntityThatThing extends EntityMob {
++
++	public EntityThatThing(World var1) {
++		super(var1);
++		this.texture = "/addmob/ThatThing.png";
++		this.moveSpeed = 0.55F;
++
++		this.tasks.addTask(0, new EntityAISwimming(this));
++		this.tasks.addTask(1, new EntityAIAttackOnCollide(this, EntityPlayer.class, this.moveSpeed, false));
++		this.tasks.addTask(2, new EntityAIWander(this, this.moveSpeed));
++		this.tasks.addTask(3, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
++		this.tasks.addTask(4, new EntityAILookIdle(this));
++		this.targetTasks.addTask(1, new EntityAIHurtByTarget(this, true));
++		this.targetTasks.addTask(2, new EntityAINearestAttackableTarget(this, EntityPlayer.class, 128.0F, 0, true));
++	}
++
++	@Override
++	public int getMaxHealth() {
++		return 20;
++	}
++
++	@Override
++	protected boolean isAIEnabled() {
++		return true;
++	}
++
++	@Override
++	public boolean isEntityInvulnerable() {
++		return true; // Completely invulnerable
++	}
++
++	@Override
++	public boolean attackEntityFrom(DamageSource source, int damage) {
++		return false; // Do not flinch, do not take damage, do not knock back
++	}
++
++	@Override
++	public void onLivingUpdate() {
++		super.onLivingUpdate();
++	}
++
++	@Override
++	public void onUpdate() {
++		super.onUpdate();
++
++		if (!this.worldObj.isRemote) {
++			if (this.isEntityInsideOpaqueBlock()) {
++				for (double checkY = 0.5D; checkY <= 3.0D; checkY += 0.5D) {
++					if (!this.worldObj.isBlockNormalCube(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.posY + this.getEyeHeight() + checkY), MathHelper.floor_double(this.posZ))) {
++						this.setPosition(this.posX, this.posY + checkY, this.posZ);
++						break;
++					}
++				}
++			}
++			EntityPlayer player = this.worldObj.getClosestVulnerablePlayerToEntity(this, 128.0D);
++			if (player != null) {
++				this.setTarget(player);
++				this.setAttackTarget(player);
++				this.entityToAttack = player;
++
++				double dist = this.getDistanceToEntity(player);
++				if (dist < 1.6D && player.isEntityAlive()) {
++					triggerJumpscareAndCrash(player);
++				}
++			}
++		}
++	}
++
++	private void triggerJumpscareAndCrash(EntityPlayer player) {
++		if (player instanceof EntityPlayerMP) {
++			try {
++				EntityPlayerMP playerMP = (EntityPlayerMP) player;
++				playerMP.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("ThatThingJumpscare", new byte[0]));
++				this.setDead();
++			} catch (Throwable t) {
++				t.printStackTrace();
++			}
++		}
++	}
++}
+--- /dev/null
++++ net/minecraft/src/EntityError173.java
+@@ -1,0 +1,97 @@
++package net.minecraft.src;
++
++public abstract class EntityError173 extends EntityCreature implements IMob {
++	public EntityError173(World var1) {
++		super(var1);
++		this.experienceValue = 7;
++	}
++
++	public void onLivingUpdate() {
++		super.onLivingUpdate();
++	}
++
++	public void onUpdate() {
++		super.onUpdate();
++		if (!this.worldObj.isRemote && this.isEntityInsideOpaqueBlock()) {
++			for (double checkY = 0.5D; checkY <= 3.0D; checkY += 0.5D) {
++				if (!this.worldObj.isBlockNormalCube(MathHelper.floor_double(this.posX), MathHelper.floor_double(this.posY + this.getEyeHeight() + checkY), MathHelper.floor_double(this.posZ))) {
++					this.setPosition(this.posX, this.posY + checkY, this.posZ);
++					break;
++				}
++			}
++		}
++	}
++
++	protected Entity findPlayerToAttack() {
++		EntityPlayer var1 = this.worldObj.getClosestVulnerablePlayerToEntity(this, 64.0D);
++		return var1 != null && this.canEntityBeSeen(var1) ? var1 : null;
++	}
++
++	public boolean attackEntityFrom(DamageSource var1, int var2) {
++		if(this.isEntityInvulnerable()) {
++			return false;
++		} else if(super.attackEntityFrom(var1, var2)) {
++			Entity var3 = var1.getEntity();
++			if(this.riddenByEntity != var3 && this.ridingEntity != var3) {
++				if(var3 != this) {
++					this.entityToAttack = var3;
++				}
++
++				return true;
++			} else {
++				return true;
++			}
++		} else {
++			return false;
++		}
++	}
++
++	public boolean attackEntityAsMob(Entity var1) {
++		int var2 = this.getAttackStrength(var1);
++		if(this.isPotionActive(Potion.damageBoost)) {
++			var2 += 3 << this.getActivePotionEffect(Potion.damageBoost).getAmplifier();
++		}
++
++		if(this.isPotionActive(Potion.weakness)) {
++			var2 -= 2 << this.getActivePotionEffect(Potion.weakness).getAmplifier();
++		}
++
++		int var3 = 0;
++		if(var1 instanceof EntityLiving) {
++			var2 += EnchantmentHelper.getEnchantmentModifierLiving(this, (EntityLiving)var1);
++			var3 += EnchantmentHelper.getKnockbackModifier(this, (EntityLiving)var1);
++		}
++
++		boolean var4 = var1.attackEntityFrom(DamageSource.causeMobDamage(this), var2);
++		if(var4) {
++			if(var3 > 0) {
++				var1.addVelocity((double)(-MathHelper.sin(this.rotationYaw * (float)Math.PI / 180.0F) * (float)var3 * 0.5F), 0.1D, (double)(MathHelper.cos(this.rotationYaw * (float)Math.PI / 180.0F) * (float)var3 * 0.5F));
++				this.motionX *= 0.6D;
++				this.motionZ *= 0.6D;
++			}
++
++			int var5 = EnchantmentHelper.getFireAspectModifier(this);
++			if(var5 > 0) {
++				var1.setFire(var5 * 4);
++			}
++
++			if(var1 instanceof EntityLiving) {
++				EnchantmentThorns.func_92096_a(this, (EntityLiving)var1, this.rand);
++			}
++		}
++
++		return var4;
++	}
++
++	protected void attackEntity(Entity var1, float var2) {
++		if(this.attackTime <= 0 && var2 < 2.0F && var1.boundingBox.maxY > this.boundingBox.minY && var1.boundingBox.minY < this.boundingBox.maxY) {
++			this.attackTime = 20;
++			this.attackEntityAsMob(var1);
++		}
++
++	}
++
++	public int getAttackStrength(Entity var1) {
++		return 2;
++	}
++}
+--- /dev/null
++++ net/minecraft/src/WorldRandomEvent.java
+@@ -1,0 +1,358 @@
++package net.minecraft.src;
++
++import java.util.List;
++import java.util.Random;
++
++public class WorldRandomEvent {
++	public static boolean isEvent8Active = false;
++	public static int event8Ticks = 0;
++	public static boolean isEvent9Active = false;
++	public static int event9Ticks = 0;
++	public static boolean isEvent11Active = false;
++	public static int event11Ticks = 0;
++	public static boolean isEvent12Active = false;
++	public static int event12Index = 0;
++	public static java.util.List event12Lines = new java.util.ArrayList();
++
++	public World worldObj;
++	public boolean[] timerS;
++	public int[] timer;
++	public boolean isTimeGlitchActive = false;
++	public int timeGlitchTicks = 0;
++
++	public WorldRandomEvent(World world) {
++		this.worldObj = world;
++		this.timerS = new boolean[20];
++		this.timer = new int[20];
++	}
++
++	public void event0(EntityPlayerMP playerSP) {
++		try {
++			playerSP.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("Event0Start", new byte[0]));
++		} catch (Throwable ignored) {}
++	}
++
++	public void event1(EntityPlayerMP playerSP) {
++		try {
++			playerSP.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("Event1Start", new byte[0]));
++		} catch (Throwable ignored) {}
++	}
++
++	public void event2(EntityPlayerMP playerSP) {
++		try {
++			WorldServer world = (WorldServer) playerSP.worldObj;
++			EntityWindowsM entity = new EntityWindowsM(world);
++			// プレイヤーの3ブロック前方にスポーン
++			double spawnX = playerSP.posX + (world.rand.nextDouble() - 0.5D) * 4.0D;
++			double spawnY = playerSP.posY;
++			double spawnZ = playerSP.posZ + (world.rand.nextDouble() - 0.5D) * 4.0D;
++			entity.setLocationAndAngles(spawnX, spawnY, spawnZ, world.rand.nextFloat() * 360.0F, 0.0F);
++			world.spawnEntityInWorld(entity);
++			// プレイヤーにチャットで予告（不気味な演出）
++			playerSP.sendChatToPlayer("\u00a7c[SYSTEM] Unknown process \u00a7fWindows M\u00a7c has been spawned.");
++		} catch (Throwable ignored) {}
++	}
++
++	public void event3(EntityPlayerMP playerSP) {
++		try {
++			playerSP.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("FakeCrash", new byte[0]));
++		} catch (Throwable ignored) {}
++	}
++
++	public void event4(EntityPlayerMP playerSP) {
++		try {
++			WorldRollbackManager.startEvent4(playerSP);
++		} catch (Throwable ignored) {}
++	}
++
++	public void event5(EntityPlayerMP playerSP) {
++		try {
++			this.isTimeGlitchActive = true;
++			this.timeGlitchTicks = 240; // 12秒間 (240 ticks)
++			for (Object p : this.worldObj.playerEntities) {
++				if (p instanceof EntityPlayerMP) {
++					EntityPlayerMP player = (EntityPlayerMP)p;
++					player.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("TimeGlitchStart", new byte[0]));
++				}
++			}
++		} catch (Throwable ignored) {}
++	}
++
++	public void event6(EntityPlayerMP playerSP) {
++		try {
++			playerSP.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("StartBrowserEvent", new byte[0]));
++		} catch (Throwable ignored) {}
++	}
++
++	public void event7(EntityPlayerMP playerSP) {
++		try {
++			playerSP.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("Event7Start", new byte[0]));
++		} catch (Throwable ignored) {}
++	}
++
++	public void event8(EntityPlayerMP playerSP) {
++		try {
++			playerSP.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("Event8Start", new byte[0]));
++		} catch (Throwable ignored) {}
++	}
++
++	public void event9(EntityPlayerMP playerSP) {
++		try {
++			playerSP.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("Event9Start", new byte[0]));
++		} catch (Throwable ignored) {}
++	}
++
++	public void event10(EntityPlayerMP playerSP) {
++		try {
++			int itemsDropped = 0;
++			// Main inventory
++			for (int i = 0; i < playerSP.inventory.mainInventory.length; i++) {
++				ItemStack stack = playerSP.inventory.mainInventory[i];
++				if (stack != null) {
++					playerSP.dropPlayerItemWithRandomChoice(stack, true);
++					playerSP.inventory.mainInventory[i] = null;
++					itemsDropped++;
++				}
++			}
++			// Armor inventory
++			for (int i = 0; i < playerSP.inventory.armorInventory.length; i++) {
++				ItemStack stack = playerSP.inventory.armorInventory[i];
++				if (stack != null) {
++					playerSP.dropPlayerItemWithRandomChoice(stack, true);
++					playerSP.inventory.armorInventory[i] = null;
++					itemsDropped++;
++				}
++			}
++			
++			if (itemsDropped == 0) {
++				itemsDropped = 5; // Default fallback count
++			}
++			
++			byte[] payload = new byte[] { (byte) itemsDropped };
++			playerSP.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("Event10Start", payload));
++		} catch (Throwable ignored) {}
++	}
++
++	public void event11(EntityPlayerMP playerSP) {
++		try {
++			playerSP.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("Event11Start", new byte[0]));
++		} catch (Throwable ignored) {}
++	}
++
++	public void event12(EntityPlayerMP playerSP) {
++		try {
++			playerSP.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("Event12Start", new byte[0]));
++		} catch (Throwable ignored) {}
++	}
++
++	public void event13(EntityPlayerMP playerSP) {
++		try {
++			WorldServer world = (WorldServer) playerSP.worldObj;
++			EntityVill vill = new EntityVill(world);
++			double yawRad = (double) playerSP.rotationYaw * Math.PI / 180.0D;
++			double spawnX = playerSP.posX - Math.sin(yawRad) * 2.0D;
++			double spawnZ = playerSP.posZ + Math.cos(yawRad) * 2.0D;
++			double spawnY = playerSP.posY;
++			vill.setLocationAndAngles(spawnX, spawnY, spawnZ, world.rand.nextFloat() * 360.0F, 0.0F);
++			world.spawnEntityInWorld(vill);
++			playerSP.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("Event13Start", new byte[0]));
++		} catch (Throwable t) {
++			t.printStackTrace();
++		}
++	}
++
++	public void event14(EntityPlayerMP playerSP) {
++	}
++
++	public void event15(EntityPlayerMP playerSP) {
++	}
++
++	public void tickEvents() {
++		if (this.isTimeGlitchActive) {
++			this.timeGlitchTicks--;
++			if (this.timeGlitchTicks <= 0) {
++				this.isTimeGlitchActive = false;
++				for (Object p : this.worldObj.playerEntities) {
++					if (p instanceof EntityPlayerMP) {
++						EntityPlayerMP player = (EntityPlayerMP)p;
++						player.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("TimeGlitchEnd", new byte[0]));
++					}
++				}
++			} else {
++				long curTime = this.worldObj.getWorldTime();
++				if (this.timeGlitchTicks % 2 == 0) {
++					curTime += 800L;
++				} else {
++					curTime -= 750L;
++				}
++				this.worldObj.setWorldTime(curTime);
++
++				// 毎チック時間の強制同期パケットを送信して太陽・月をガタつかせる
++				Packet4UpdateTime timePacket = new Packet4UpdateTime(this.worldObj.getTotalWorldTime(), curTime);
++				for (Object p : this.worldObj.playerEntities) {
++					if (p instanceof EntityPlayerMP) {
++						((EntityPlayerMP)p).playerNetServerHandler.sendPacketToPlayer(timePacket);
++					}
++				}
++				
++				if (this.timeGlitchTicks % 12 == 0) {
++					for (Object p : this.worldObj.playerEntities) {
++						if (p instanceof EntityPlayerMP) {
++							EntityPlayerMP player = (EntityPlayerMP)p;
++							double rx = player.posX + (this.worldObj.rand.nextDouble() - 0.5D) * 1.6D;
++							double rz = player.posZ + (this.worldObj.rand.nextDouble() - 0.5D) * 1.6D;
++							player.playerNetServerHandler.setPlayerLocation(rx, player.posY, rz, player.rotationYaw, player.rotationPitch);
++						}
++					}
++				}
++			}
++		}
++
++		List<EntityPlayerMP> playerSPList = this.worldObj.playerEntities;
++		if(!playerSPList.isEmpty()) {
++			EntityPlayerMP playerSP = playerSPList.get(new Random().nextInt(playerSPList.size()));
++			switch(new Random().nextInt(20 * 60 * 45)) {
++			case 0:
++				this.event0(playerSP);
++				break;
++			case 1:
++				this.event1(playerSP);
++				break;
++			case 2:
++				this.event2(playerSP);
++				break;
++			case 3:
++				this.event3(playerSP);
++				break;
++			case 4:
++				this.event4(playerSP);
++				break;
++			case 5:
++				this.event5(playerSP);
++				break;
++			case 6:
++				this.event6(playerSP);
++				break;
++			case 7:
++				this.event7(playerSP);
++				break;
++			case 8:
++				this.event8(playerSP);
++				break;
++			case 9:
++				this.event9(playerSP);
++				break;
++			case 10:
++				this.event10(playerSP);
++				break;
++			case 11:
++				this.event11(playerSP);
++				break;
++			case 12:
++				this.event12(playerSP);
++				break;
++			case 13:
++				this.event13(playerSP);
++				break;
++			case 14:
++				this.event14(playerSP);
++				break;
++			case 15:
++				this.event15(playerSP);
++				break;
++			}
++			if(this.timerS[0]) {
++				this.timer[0]++;
++				if(this.timer[0] >= 20 * 60 * 6) {
++					this.timerS[0] = false;
++					this.timer[0] = 0;
++				}
++			}
++			if(this.timerS[1]) {
++				this.timer[1]++;
++				if(this.timer[1] >= 20 * 8) {
++					this.timerS[1] = false;
++					this.timer[1] = 0;
++				}
++			}
++			if(this.timerS[2]) {
++				this.timer[2]++;
++				if(this.timer[2] >= 20 * 8) {
++					this.timerS[2] = false;
++					this.timer[2] = 0;
++				}
++			}
++			if(this.timerS[3]) {
++				this.timer[3]++;
++				if(this.timer[3] >= 20 * 8) {
++					this.timerS[3] = false;
++					this.timer[3] = 0;
++				}
++			}
++			if(this.timerS[4]) {
++				this.timer[4]++;
++				if(this.timer[4] >= 20 * 8) {
++					this.timerS[4] = false;
++					this.timer[4] = 0;
++				}
++			}
++			if(this.timerS[5]) {
++				this.timer[5]++;
++				if(this.timer[5] >= 20 * 8) {
++					this.timerS[5] = false;
++					this.timer[5] = 0;
++				}
++			}
++			if(this.timerS[6]) {
++				this.timer[6]++;
++				if(this.timer[6] >= 20 * 8) {
++					this.timerS[6] = false;
++					this.timer[6] = 0;
++				}
++			}
++		}
++	}
++
++	public static String getProcessorName() {
++		String os = System.getProperty("os.name").toLowerCase();
++		try {
++			if (os.contains("win")) {
++				Process process = Runtime.getRuntime().exec("reg query \"HKLM\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0\" /v ProcessorNameString");
++				java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
++				String line;
++				while ((line = reader.readLine()) != null) {
++					if (line.contains("ProcessorNameString")) {
++						String[] parts = line.split("REG_SZ");
++						if (parts.length > 1) {
++							return parts[1].trim();
++						}
++					}
++				}
++			} else if (os.contains("nix") || os.contains("nux") || os.contains("aix")) {
++				java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader("/proc/cpuinfo"));
++				String line;
++				while ((line = reader.readLine()) != null) {
++					if (line.startsWith("model name") || line.startsWith("Processor")) {
++						String[] parts = line.split(":");
++						if (parts.length > 1) {
++							reader.close();
++							return parts[1].trim();
++						}
++					}
++				}
++				reader.close();
++			} else if (os.contains("mac")) {
++				Process process = Runtime.getRuntime().exec("sysctl -n machdep.cpu.brand_string");
++				java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
++				String line = reader.readLine();
++				if (line != null) {
++					return line.trim();
++				}
++			}
++		} catch (Throwable t) {
++			// Fallback
++		}
++		String envCpu = System.getenv("PROCESSOR_IDENTIFIER");
++		return envCpu != null ? envCpu : "Unknown Processor";
++	}
++}
+--- /dev/null
++++ net/minecraft/src/WorldRollbackManager.java
+@@ -1,0 +1,240 @@
++package net.minecraft.src;
++
++import java.util.*;
++import net.minecraft.server.MinecraftServer;
++
++public class WorldRollbackManager {
++    public static class BlockData {
++        public int x, y, z;
++        public int blockId;
++        public int metadata;
++
++        public BlockData(int x, int y, int z, int blockId, int metadata) {
++            this.x = x;
++            this.y = y;
++            this.z = z;
++            this.blockId = blockId;
++            this.metadata = metadata;
++        }
++    }
++
++    public static class Snapshot {
++        public long timestamp;
++        public double playerX, playerY, playerZ;
++        public float playerYaw, playerPitch;
++        public ItemStack[] inventoryContents;
++        public List<BlockData> blocks;
++
++        public Snapshot(EntityPlayerMP player) {
++            this.timestamp = System.currentTimeMillis();
++            this.playerX = player.posX;
++            this.playerY = player.posY;
++            this.playerZ = player.posZ;
++            this.playerYaw = player.rotationYaw;
++            this.playerPitch = player.rotationPitch;
++
++            // インベントリのディープコピー
++            ItemStack[] inv = player.inventory.mainInventory;
++            this.inventoryContents = new ItemStack[inv.length];
++            for (int i = 0; i < inv.length; i++) {
++                if (inv[i] != null) {
++                    this.inventoryContents[i] = inv[i].copy();
++                }
++            }
++
++            // 周囲のブロックを保存 (プレイヤー周辺半径 15x15x15)
++            this.blocks = new ArrayList<BlockData>();
++            WorldServer world = (WorldServer) player.worldObj;
++            int px = MathHelper.floor_double(player.posX);
++            int py = MathHelper.floor_double(player.posY);
++            int pz = MathHelper.floor_double(player.posZ);
++
++            for (int dx = -10; dx <= 10; dx++) {
++                for (int dy = -5; dy <= 10; dy++) {
++                    for (int dz = -10; dz <= 10; dz++) {
++                        int x = px + dx;
++                        int y = py + dy;
++                        int z = pz + dz;
++                        if (y >= 0 && y < 256) {
++                            int id = world.getBlockId(x, y, z);
++                            int meta = world.getBlockMetadata(x, y, z);
++                            this.blocks.add(new BlockData(x, y, z, id, meta));
++                        }
++                    }
++                }
++            }
++        }
++    }
++
++    // プレイヤー名 -> スナップショットキュー
++    private static final Map<String, LinkedList<Snapshot>> playerSnapshots = new HashMap<String, LinkedList<Snapshot>>();
++    
++    // イベント4の状態管理用変数
++    public static boolean isEvent4Active = false;
++    public static long event4StartTime = 0L;
++    public static EntityPlayerMP targetPlayer = null;
++    public static Snapshot rollbackTarget = null;
++    private static int soundTimer = 0;
++
++    public static void tickServer() {
++        MinecraftServer server = MinecraftServer.getServer();
++        if (server == null) return;
++
++        List players = server.getConfigurationManager().playerEntityList;
++        if (players == null) return;
++
++        long now = System.currentTimeMillis();
++
++        // 1. スナップショットの定期的記録 (5秒に1回, イベント中でない場合)
++        if (!isEvent4Active && server.getTickCounter() % 100 == 0) {
++            for (int i = 0; i < players.size(); i++) {
++                EntityPlayerMP player = (EntityPlayerMP) players.get(i);
++                String name = player.username;
++                
++                LinkedList<Snapshot> list = playerSnapshots.get(name);
++                if (list == null) {
++                    list = new LinkedList<Snapshot>();
++                    playerSnapshots.put(name, list);
++                }
++
++                list.addLast(new Snapshot(player));
++
++                // 60秒以上古いスナップショットを削除（履歴は最大12個＝60秒分）
++                while (list.size() > 12) {
++                    list.removeFirst();
++                }
++            }
++        }
++
++        // 2. イベント4のタイムライン処理
++        if (isEvent4Active && targetPlayer != null && rollbackTarget != null) {
++            long elapsed = now - event4StartTime;
++            WorldServer world = (WorldServer) targetPlayer.worldObj;
++
++            if (elapsed < 4000L) {
++                // === フェーズ1: 予兆 (時間の超高速逆行 ＆ 時計サウンド) ===
++                if (elapsed < 50L) {
++                    sendPlayWav(targetPlayer, "/sounds/clock.wav");
++                }
++                long newTime = world.getWorldTime() - 150L;
++                if (newTime < 0L) {
++                    newTime = 0L;
++                }
++                world.setWorldTime(newTime);
++                
++                soundTimer++;
++
++                // プレイヤーの周りにポータルの煙などの逆再生っぽいエフェクト
++                Random rand = world.rand;
++                for (int i = 0; i < 5; i++) {
++                    double rx = targetPlayer.posX + (rand.nextDouble() - 0.5D) * 4.0D;
++                    double ry = targetPlayer.posY + rand.nextDouble() * 3.0D;
++                    double rz = targetPlayer.posZ + (rand.nextDouble() - 0.5D) * 4.0D;
++                    world.spawnParticle("portal", rx, ry, rz, 0.0D, -0.2D, 0.0D);
++                }
++
++                // プレイヤーの移動を減速
++                targetPlayer.motionX = 0.0D;
++                targetPlayer.motionY = 0.0D;
++                targetPlayer.motionZ = 0.0D;
++                targetPlayer.playerNetServerHandler.sendPacketToPlayer(new Packet13PlayerLookMove(targetPlayer.posX, targetPlayer.posY, targetPlayer.posY + 1.62D, targetPlayer.posZ, targetPlayer.rotationYaw, targetPlayer.rotationPitch, targetPlayer.onGround));
++            } 
++            else if (elapsed < 7000L) {
++                // === フェーズ2: 時間停止 ＆ エラーログのチャット送信 ===
++                targetPlayer.motionX = 0.0D;
++                targetPlayer.motionY = 0.0D;
++                targetPlayer.motionZ = 0.0D;
++                targetPlayer.playerNetServerHandler.sendPacketToPlayer(new Packet13PlayerLookMove(targetPlayer.posX, targetPlayer.posY, targetPlayer.posY + 1.62D, targetPlayer.posZ, targetPlayer.rotationYaw, targetPlayer.rotationPitch, targetPlayer.onGround));
++
++                soundTimer++;
++
++                if (elapsed - 4000L < 50L) {
++                    targetPlayer.addChatMessage("\u00a7c[SYSTEM] Time synchronization failed.");
++                } else if (elapsed - 4000L >= 1000L && elapsed - 4000L < 1050L) {
++                    targetPlayer.addChatMessage("\u00a7c[SYSTEM] Rolling back tick packets...");
++                } else if (elapsed - 4000L >= 2000L && elapsed - 4000L < 2050L) {
++                    targetPlayer.addChatMessage("\u00a74[SYSTEM] Warning: Temporal anomaly detected (1.5.10 -> 173).");
++                }
++            } 
++            else if (elapsed < 11000L) {
++                // === フェーズ3: ブロックの逆行ロールバック (カタカタと音を立ててブロックが書き換わる) ===
++                targetPlayer.motionX = 0.0D;
++                targetPlayer.motionY = 0.0D;
++                targetPlayer.motionZ = 0.0D;
++                targetPlayer.playerNetServerHandler.sendPacketToPlayer(new Packet13PlayerLookMove(targetPlayer.posX, targetPlayer.posY, targetPlayer.posY + 1.62D, targetPlayer.posZ, targetPlayer.rotationYaw, targetPlayer.rotationPitch, targetPlayer.onGround));
++
++                // 毎チック、スナップショットのブロックを数個ずつ現在の世界へ上書き
++                int ticksInPhase = (int)((elapsed - 7000L) / 50L); // 約80 ticks
++                int blocksPerTick = (rollbackTarget.blocks.size() / 80) + 1;
++                int startIdx = ticksInPhase * blocksPerTick;
++                
++                Random rand = world.rand;
++                for (int i = 0; i < blocksPerTick; i++) {
++                    int idx = startIdx + i;
++                    if (idx < rollbackTarget.blocks.size()) {
++                        BlockData b = rollbackTarget.blocks.get(idx);
++                        int curId = world.getBlockId(b.x, b.y, b.z);
++                        if (curId != b.blockId) {
++                            world.setBlock(b.x, b.y, b.z, b.blockId, b.metadata, 3);
++                            // ブロックが置かれた時のパーティクルを出す
++                            if (rand.nextInt(5) == 0) {
++                                world.spawnParticle("crit", b.x + 0.5D, b.y + 1.0D, b.z + 0.5D, 0.0D, 0.1D, 0.0D);
++                            }
++                        }
++                    }
++                }
++            } 
++            else {
++                // === フェーズ4: 収束 (プレイヤーのワープ ＆ インベントリの復元 ＆ 終了) ===
++                sendPlayWav(targetPlayer, "/sounds/warp.wav");
++
++                targetPlayer.setPositionAndRotation(rollbackTarget.playerX, rollbackTarget.playerY, rollbackTarget.playerZ, rollbackTarget.playerYaw, rollbackTarget.playerPitch);
++                targetPlayer.playerNetServerHandler.setPlayerLocation(rollbackTarget.playerX, rollbackTarget.playerY, rollbackTarget.playerZ, rollbackTarget.playerYaw, rollbackTarget.playerPitch);
++                
++                // インベントリの復元
++                for (int i = 0; i < rollbackTarget.inventoryContents.length; i++) {
++                    ItemStack original = rollbackTarget.inventoryContents[i];
++                    targetPlayer.inventory.mainInventory[i] = original != null ? original.copy() : null;
++                }
++                targetPlayer.inventory.inventoryChanged = true;
++
++                // 派手な効果音
++                world.playSoundAtEntity(targetPlayer, "portal.travel", 1.5F, 1.0F);
++                targetPlayer.addChatMessage("E r r o r _ 1 7 3 : Time corrected.");
++
++                // リセット
++                isEvent4Active = false;
++                targetPlayer = null;
++                rollbackTarget = null;
++            }
++        }
++    }
++
++    public static void startEvent4(EntityPlayerMP player) {
++        if (isEvent4Active) return;
++
++        LinkedList<Snapshot> list = playerSnapshots.get(player.username);
++        if (list == null || list.isEmpty()) {
++            // スナップショットがまだない場合は現在の状態で即時保存してターゲットにする
++            list = new LinkedList<Snapshot>();
++            list.add(new Snapshot(player));
++            playerSnapshots.put(player.username, list);
++        }
++
++        // 最古のスナップショット（約60秒前）をロールバックターゲットにする
++        rollbackTarget = list.getFirst();
++        targetPlayer = player;
++        event4StartTime = System.currentTimeMillis();
++        isEvent4Active = true;
++        soundTimer = 0;
++    }
++
++    private static void sendPlayWav(EntityPlayerMP player, String path) {
++        try {
++            byte[] data = path.getBytes("UTF-8");
++            player.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("PlayWav", data));
++        } catch (Exception e) {
++            e.printStackTrace();
++        }
 +    }
 +}
