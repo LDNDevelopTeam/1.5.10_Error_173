@@ -1,0 +1,2 @@
+Put your ElevenLabs generated WAV audio files (like clock.wav, warp.wav, or ambient.wav) here.
+They can be loaded from the code using "/sounds/filename.wav" via WavPlaySound.play().
