@@ -1,0 +1,58 @@
+--- net/minecraft/src/EntityList.java
++++ net/minecraft/src/EntityList.java
+@@ -167,5 +167,6 @@
+ 		addMapping(EntityIronGolem.class, "VillagerGolem", 99);
+ 		addMapping(EntityVillager.class, "Villager", 120, 5651507, 12422002);
+ 		addMapping(EntityEnderCrystal.class, "EnderCrystal", 200);
++		addMapping(EntityVill.class, "Vill", 107, 0x9c4242, 0xd4a373);
+ 	}
+ }
+--- /dev/null
++++ net/minecraft/src/EntityVill.java
+@@ -1,0 +1,46 @@
++package net.minecraft.src;
++
++public class EntityVill extends EntityMob {
++    public EntityVill(World var1) {
++        super(var1);
++        this.texture = "/addmob/vill.png";
++        this.moveSpeed = 0.5F;
++        this.setSize(0.6F, 1.8F);
++        
++        // Attack/AI Tasks
++        this.tasks.addTask(0, new EntityAISwimming(this));
++        this.tasks.addTask(1, new EntityAIAttackOnCollide(this, EntityPlayer.class, this.moveSpeed, false));
++        this.tasks.addTask(2, new EntityAIWander(this, this.moveSpeed));
++        this.tasks.addTask(3, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
++        this.tasks.addTask(4, new EntityAILookIdle(this));
++        
++        // Target Tasks
++        this.targetTasks.addTask(1, new EntityAIHurtByTarget(this, true));
++        this.targetTasks.addTask(2, new EntityAINearestAttackableTarget(this, EntityPlayer.class, 16.0F, 0, true));
++    }
++
++    @Override
++    public int getAttackStrength(Entity target) {
++        return 2; // Deals 1 heart of damage (2 points)
++    }
++
++    @Override
++    public int getMaxHealth() {
++        return 20; // Health like a villager
++    }
++
++    @Override
++    protected String getLivingSound() {
++        return "mob.villager.default";
++    }
++
++    @Override
++    protected String getHurtSound() {
++        return "mob.villager.defaulthurt";
++    }
++
++    @Override
++    protected String getDeathSound() {
++        return "mob.villager.defaultdeath";
++    }
++}
