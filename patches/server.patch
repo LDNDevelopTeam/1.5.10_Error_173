@@ -132,6 +132,31 @@
 +        }
 +    }
 +}
+--- net/minecraft/src/BlockFlower.java
++++ net/minecraft/src/BlockFlower.java
+@@ -16,11 +16,11 @@
+ 	}
+ 
+ 	public boolean canPlaceBlockAt(World var1, int var2, int var3, int var4) {
+-		return super.canPlaceBlockAt(var1, var2, var3, var4) && this.canThisPlantGrowOnThisBlockID(var1.getBlockId(var2, var3 - 1, var4));
++		return super.canPlaceBlockAt(var1, var2, var3, var4);
+ 	}
+ 
+ 	protected boolean canThisPlantGrowOnThisBlockID(int var1) {
+-		return var1 == Block.grass.blockID || var1 == Block.dirt.blockID || var1 == Block.tilledField.blockID;
++		return var1 == Block.grass.blockID || var1 == Block.dirt.blockID || var1 == Block.tilledField.blockID || var1 == 0;
+ 	}
+ 
+ 	public void onNeighborBlockChange(World var1, int var2, int var3, int var4, int var5) {
+@@ -41,7 +41,7 @@
+ 	}
+ 
+ 	public boolean canBlockStay(World var1, int var2, int var3, int var4) {
+-		return (var1.getFullBlockLightValue(var2, var3, var4) >= 8 || var1.canBlockSeeTheSky(var2, var3, var4)) && this.canThisPlantGrowOnThisBlockID(var1.getBlockId(var2, var3 - 1, var4));
++		return true;
+ 	}
+ 
+ 	public AxisAlignedBB getCollisionBoundingBoxFromPool(World var1, int var2, int var3, int var4) {
 --- /dev/null
 +++ net/minecraft/src/EntityIrregularity.java
 @@ -1,0 +1,48 @@
@@ -183,6 +208,101 @@
 +        }
 +    }
 +}
+--- net/minecraft/src/WorldGenTrees.java
++++ net/minecraft/src/WorldGenTrees.java
+@@ -60,48 +60,63 @@
+ 					this.setBlock(var1, var3, var4 - 1, var5, Block.dirt.blockID);
+ 					var9 = 3;
+ 					byte var19 = 0;
++					
++					boolean isGlitched = var2.nextFloat() < 0.40F;
++					boolean isDeadTree = isGlitched && var2.nextFloat() < 0.35F;
+ 
+ 					int var13;
+ 					int var14;
+ 					int var15;
+-					for(var11 = var4 - var9 + var6; var11 <= var4 + var6; ++var11) {
+-						var12 = var11 - (var4 + var6);
+-						var13 = var19 + 1 - var12 / 2;
+-
+-						for(var14 = var3 - var13; var14 <= var3 + var13; ++var14) {
+-							var15 = var14 - var3;
+-
+-							for(int var16 = var5 - var13; var16 <= var5 + var13; ++var16) {
+-								int var17 = var16 - var5;
+-								if(Math.abs(var15) != var13 || Math.abs(var17) != var13 || var2.nextInt(2) != 0 && var12 != 0) {
+-									int var18 = var1.getBlockId(var14, var11, var16);
+-									if(var18 == 0 || var18 == Block.leaves.blockID) {
+-										this.setBlockAndMetadata(var1, var14, var11, var16, Block.leaves.blockID, this.metaLeaves);
++					
++					if (!isDeadTree) {
++						for(var11 = var4 - var9 + var6; var11 <= var4 + var6; ++var11) {
++							var12 = var11 - (var4 + var6);
++							var13 = var19 + 1 - var12 / 2;
++
++							for(var14 = var3 - var13; var14 <= var3 + var13; ++var14) {
++								var15 = var14 - var3;
++
++								for(int var16 = var5 - var13; var16 <= var5 + var13; ++var16) {
++									int var17 = var16 - var5;
++									if(Math.abs(var15) != var13 || Math.abs(var17) != var13 || var2.nextInt(2) != 0 && var12 != 0) {
++										if (isGlitched && var2.nextFloat() < 0.60F) {
++											continue;
++										}
++										int var18 = var1.getBlockId(var14, var11, var16);
++										if(var18 == 0 || var18 == Block.leaves.blockID) {
++											this.setBlockAndMetadata(var1, var14, var11, var16, Block.leaves.blockID, this.metaLeaves);
++										}
+ 									}
+ 								}
+ 							}
+ 						}
+ 					}
+ 
++					int currentX = var3;
++					int currentZ = var5;
+ 					for(var11 = 0; var11 < var6; ++var11) {
+-						var12 = var1.getBlockId(var3, var4 + var11, var5);
++						if (isGlitched && var2.nextFloat() < 0.25F) {
++							currentX += var2.nextInt(3) - 1;
++							currentZ += var2.nextInt(3) - 1;
++						}
++						var12 = var1.getBlockId(currentX, var4 + var11, currentZ);
+ 						if(var12 == 0 || var12 == Block.leaves.blockID) {
+-							this.setBlockAndMetadata(var1, var3, var4 + var11, var5, Block.wood.blockID, this.metaWood);
++							this.setBlockAndMetadata(var1, currentX, var4 + var11, currentZ, Block.wood.blockID, this.metaWood);
+ 							if(this.vinesGrow && var11 > 0) {
+-								if(var2.nextInt(3) > 0 && var1.isAirBlock(var3 - 1, var4 + var11, var5)) {
+-									this.setBlockAndMetadata(var1, var3 - 1, var4 + var11, var5, Block.vine.blockID, 8);
+-								}
+-
+-								if(var2.nextInt(3) > 0 && var1.isAirBlock(var3 + 1, var4 + var11, var5)) {
+-									this.setBlockAndMetadata(var1, var3 + 1, var4 + var11, var5, Block.vine.blockID, 2);
+-								}
+-
+-								if(var2.nextInt(3) > 0 && var1.isAirBlock(var3, var4 + var11, var5 - 1)) {
+-									this.setBlockAndMetadata(var1, var3, var4 + var11, var5 - 1, Block.vine.blockID, 1);
+-								}
+-
+-								if(var2.nextInt(3) > 0 && var1.isAirBlock(var3, var4 + var11, var5 + 1)) {
+-									this.setBlockAndMetadata(var1, var3, var4 + var11, var5 + 1, Block.vine.blockID, 4);
++								if(var2.nextInt(3) > 0 && var1.isAirBlock(currentX - 1, var4 + var11, currentZ)) {
++									this.setBlockAndMetadata(var1, currentX - 1, var4 + var11, currentZ, Block.vine.blockID, 8);
++								}
++
++								if(var2.nextInt(3) > 0 && var1.isAirBlock(currentX + 1, var4 + var11, currentZ)) {
++									this.setBlockAndMetadata(var1, currentX + 1, var4 + var11, currentZ, Block.vine.blockID, 2);
++								}
++
++								if(var2.nextInt(3) > 0 && var1.isAirBlock(currentX, var4 + var11, currentZ - 1)) {
++									this.setBlockAndMetadata(var1, currentX, var4 + var11, currentZ - 1, Block.vine.blockID, 1);
++								}
++
++								if(var2.nextInt(3) > 0 && var1.isAirBlock(currentX, var4 + var11, currentZ + 1)) {
++									this.setBlockAndMetadata(var1, currentX, var4 + var11, currentZ + 1, Block.vine.blockID, 4);
+ 								}
+ 							}
+ 						}
 --- /dev/null
 +++ net/minecraft/src/CommandError173.java
 @@ -1,0 +1,76 @@
@@ -262,6 +382,183 @@
 +        return this.getCommandName().compareTo(((ICommand)var1).getCommandName());
 +    }
 +}
+--- net/minecraft/src/ChunkProviderGenerate.java
++++ net/minecraft/src/ChunkProviderGenerate.java
+@@ -109,6 +109,33 @@
+ 			}
+ 		}
+ 
++		// Error_173: Terrain chunk clipping (glitched holes)
++		if (this.rand.nextFloat() < 0.15F) {
++			int holeCount = this.rand.nextInt(3) + 1;
++			for (int h = 0; h < holeCount; ++h) {
++				int startX = this.rand.nextInt(16);
++				int startZ = this.rand.nextInt(16);
++				int holeWidth = this.rand.nextInt(4) + 2;
++				int holeLength = this.rand.nextInt(4) + 2;
++				int bottomY = this.rand.nextInt(40) + 15;
++				int topY = this.rand.nextInt(45) + bottomY;
++				
++				for (int dx = 0; dx < holeWidth; ++dx) {
++					for (int dz = 0; dz < holeLength; ++dz) {
++						int x = startX + dx;
++						int z = startZ + dz;
++						if (x < 16 && z < 16) {
++							for (int y = bottomY; y < topY; ++y) {
++								int index = (x * 16 + z) * 128 + y;
++								if (index >= 0 && index < var3.length) {
++									var3[index] = 0;
++								}
++							}
++						}
++					}
++				}
++			}
++		}
+ 	}
+ 
+ 	public void replaceBlocksForBiome(int var1, int var2, byte[] var3, BiomeGenBase[] var4) {
+@@ -165,6 +192,24 @@
+ 									var15 = (byte)Block.sandStone.blockID;
+ 								}
+ 							}
++							
++							// Error_173: Block jumble and bedrock exposure
++							if (var16 > 0 && this.rand.nextDouble() < 0.08) {
++								double randVal = this.rand.nextDouble();
++								if (randVal < 0.12) {
++									var3[var17] = (byte)Block.bedrock.blockID;
++								} else if (randVal < 0.40) {
++									var3[var17] = (byte)Block.dirt.blockID;
++								} else if (randVal < 0.60) {
++									var3[var17] = (byte)Block.gravel.blockID;
++								} else if (randVal < 0.75) {
++									var3[var17] = (byte)Block.sand.blockID;
++								} else if (randVal < 0.90) {
++									var3[var17] = (byte)Block.oreCoal.blockID;
++								} else {
++									var3[var17] = (byte)Block.sponge.blockID;
++								}
++							}
+ 						}
+ 					}
+ 				}
+@@ -380,6 +425,115 @@
+ 
+ 				if(this.worldObj.canSnowAt(var12 + var4, var14, var13 + var5)) {
+ 					this.worldObj.setBlock(var12 + var4, var14, var13 + var5, Block.snow.blockID, 0, 2);
++				}
++			}
++		}
++
++		// Error_173 Custom Glitched Generation
++		for (int var21 = 0; var21 < 10; ++var21) {
++			int spawnX = var4 + this.rand.nextInt(16);
++			int spawnZ = var5 + this.rand.nextInt(16);
++			int spawnY = this.worldObj.getHeightValue(spawnX, spawnZ);
++			
++			// 1. Cross Generation (approx 30% chance)
++			if (this.rand.nextFloat() < 0.3F) {
++				int crossY = spawnY + this.rand.nextInt(15) + 2;
++				int blockID = (this.rand.nextFloat() < 0.5F) ? Block.cobblestone.blockID : Block.planks.blockID;
++				if (crossY < 120) {
++					this.worldObj.setBlock(spawnX, crossY, spawnZ, blockID, 0, 2);
++					this.worldObj.setBlock(spawnX, crossY + 1, spawnZ, blockID, 0, 2);
++					this.worldObj.setBlock(spawnX, crossY + 2, spawnZ, blockID, 0, 2);
++					this.worldObj.setBlock(spawnX, crossY + 3, spawnZ, blockID, 0, 2);
++					this.worldObj.setBlock(spawnX - 1, crossY + 2, spawnZ, blockID, 0, 2);
++					this.worldObj.setBlock(spawnX + 1, crossY + 2, spawnZ, blockID, 0, 2);
++				}
++			}
++			
++			// 2. Floating Glitched Signs (approx 20% chance)
++			if (this.rand.nextFloat() < 0.2F) {
++				int signY = spawnY + this.rand.nextInt(10) + 5;
++				if (signY < 120 && this.worldObj.isAirBlock(spawnX, signY, spawnZ)) {
++					this.worldObj.setBlock(spawnX, signY, spawnZ, Block.signPost.blockID, this.rand.nextInt(16), 2);
++					TileEntitySign varSign = (TileEntitySign)this.worldObj.getBlockTileEntity(spawnX, signY, spawnZ);
++					if (varSign != null) {
++						String[] signText = new String[]{
++							"E\u0337r\u0336r\u0336o\u0336r\u0335_173",
++							"H E L P",
++							"s\u0337y\u0334s\u0338t\u0335e\u0336m\u0338",
++							"0x00F173"
++						};
++						for (int textIdx = 0; textIdx < 4; ++textIdx) {
++							if (this.rand.nextFloat() < 0.4F) {
++								varSign.signText[textIdx] = signText[this.rand.nextInt(signText.length)];
++							} else {
++								varSign.signText[textIdx] = "\u00a7k" + Long.toHexString(this.rand.nextLong()).substring(0, 8);
++							}
++						}
++					}
++				}
++			}
++			
++			// 3. Floating Bedrock Blocks (approx 30% chance)
++			if (this.rand.nextFloat() < 0.3F) {
++				int rockY = spawnY + this.rand.nextInt(12) + 4;
++				if (rockY < 120) {
++					int size = this.rand.nextInt(2) + 1;
++					for (int dx = 0; dx < size; ++dx) {
++						for (int dy = 0; dy < size; ++dy) {
++							for (int dz = 0; dz < size; ++dz) {
++								this.worldObj.setBlock(spawnX + dx, rockY + dy, spawnZ + dz, Block.bedrock.blockID, 0, 2);
++							}
++						}
++					}
++				}
++			}
++			
++			// 4. Balanced rare blocks (sponge, webs, mycelium) (approx 40% chance)
++			if (this.rand.nextFloat() < 0.4F) {
++				int spongeY = spawnY + this.rand.nextInt(3);
++				if (spongeY < 120) {
++					int blockID;
++					float r = this.rand.nextFloat();
++					if (r < 0.5F) {
++						blockID = Block.sponge.blockID;
++					} else if (r < 0.8F) {
++						blockID = Block.web.blockID;
++					} else {
++						blockID = Block.mycelium.blockID;
++					}
++					this.worldObj.setBlock(spawnX, spongeY, spawnZ, blockID, 0, 2);
++				}
++			}
++			
++			// 5. Glitched additional Trees (approx 30% chance)
++			if (this.rand.nextFloat() < 0.3F) {
++				WorldGenTrees genTree = new WorldGenTrees(false, 4 + this.rand.nextInt(3), 0, 0, false);
++				genTree.generate(this.worldObj, this.rand, spawnX, spawnY, spawnZ);
++			}
++			
++			// 6. Terrain Block Scattering (approx 60% chance, spawns 2-5 floating block fragments)
++			if (this.rand.nextFloat() < 0.6F) {
++				int scatterCount = this.rand.nextInt(4) + 2;
++				int[] scatterBlockIDs = {
++					Block.stone.blockID, Block.dirt.blockID, Block.grass.blockID,
++					Block.wood.blockID, Block.leaves.blockID, Block.glass.blockID,
++					Block.brick.blockID, Block.planks.blockID, Block.cobblestone.blockID,
++					Block.sandStone.blockID, Block.obsidian.blockID, Block.blockClay.blockID,
++					Block.bookShelf.blockID, Block.glowStone.blockID, Block.mycelium.blockID,
++					Block.sponge.blockID, Block.sand.blockID, Block.gravel.blockID,
++					Block.tallGrass.blockID, Block.plantYellow.blockID, Block.plantRed.blockID,
++					Block.mushroomBrown.blockID, Block.mushroomRed.blockID
++				};
++				
++				for (int i = 0; i < scatterCount; ++i) {
++					int scX = spawnX + this.rand.nextInt(8) - 4;
++					int scZ = spawnZ + this.rand.nextInt(8) - 4;
++					int scY = spawnY + this.rand.nextInt(15) - 3;
++					if (scY > 4 && scY < 120) {
++						int randBlockID = scatterBlockIDs[this.rand.nextInt(scatterBlockIDs.length)];
++						int meta = (randBlockID == Block.tallGrass.blockID) ? 1 : 0;
++						this.worldObj.setBlock(scX, scY, scZ, randBlockID, meta, 2);
++					}
+ 				}
+ 			}
+ 		}
 --- net/minecraft/src/EntityList.java
 +++ net/minecraft/src/EntityList.java
 @@ -167,5 +167,13 @@
@@ -278,6 +575,17 @@
 +		addMapping(EntityVill.class, "Vill", 107, 0x9c4242, 0xd4a373);
  	}
  }
+--- net/minecraft/src/BiomeGenJungle.java
++++ net/minecraft/src/BiomeGenJungle.java
+@@ -9,7 +9,7 @@
+ 		this.theBiomeDecorator.grassPerChunk = 25;
+ 		this.theBiomeDecorator.flowersPerChunk = 4;
+ 		this.spawnableMonsterList.add(new SpawnListEntry(EntityOcelot.class, 2, 1, 1));
+-		this.spawnableCreatureList.add(new SpawnListEntry(EntityChicken.class, 10, 4, 4));
++		this.spawnableCreatureList.add(new SpawnListEntry(EntityIrregularity.class, 10, 4, 4));
+ 	}
+ 
+ 	public WorldGenerator getRandomWorldGenForTrees(Random var1) {
 --- /dev/null
 +++ net/minecraft/src/EntityWindowsM.java
 @@ -1,0 +1,49 @@
@@ -619,6 +927,23 @@
  		addIdClassMapping(100, true, false, Packet100OpenWindow.class);
  		addIdClassMapping(101, true, true, Packet101CloseWindow.class);
  		addIdClassMapping(102, false, true, Packet102WindowClick.class);
+--- net/minecraft/src/BiomeGenBase.java
++++ net/minecraft/src/BiomeGenBase.java
+@@ -56,10 +56,10 @@
+ 		this.biomeID = var1;
+ 		biomeList[var1] = this;
+ 		this.theBiomeDecorator = this.createBiomeDecorator();
+-		this.spawnableCreatureList.add(new SpawnListEntry(EntitySheep.class, 12, 4, 4));
+-		this.spawnableCreatureList.add(new SpawnListEntry(EntityPig.class, 10, 4, 4));
+-		this.spawnableCreatureList.add(new SpawnListEntry(EntityChicken.class, 10, 4, 4));
+-		this.spawnableCreatureList.add(new SpawnListEntry(EntityCow.class, 8, 4, 4));
++		this.spawnableCreatureList.add(new SpawnListEntry(EntityNONO.class, 12, 4, 4));
++		this.spawnableCreatureList.add(new SpawnListEntry(EntityUnstable.class, 10, 4, 4));
++		this.spawnableCreatureList.add(new SpawnListEntry(EntityIrregularity.class, 10, 4, 4));
++		this.spawnableCreatureList.add(new SpawnListEntry(EntityTheWatcher.class, 8, 4, 4));
+ 		this.spawnableMonsterList.add(new SpawnListEntry(EntitySpider.class, 10, 4, 4));
+ 		this.spawnableMonsterList.add(new SpawnListEntry(EntityZombie.class, 10, 4, 4));
+ 		this.spawnableMonsterList.add(new SpawnListEntry(EntitySkeleton.class, 10, 4, 4));
 --- /dev/null
 +++ net/minecraft/src/EntityComputerDestroyer.java
 @@ -1,0 +1,49 @@

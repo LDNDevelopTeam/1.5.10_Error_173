@@ -1799,9 +1799,9 @@
 +					TileEntitySign varSign = (TileEntitySign)this.worldObj.getBlockTileEntity(spawnX, signY, spawnZ);
 +					if (varSign != null) {
 +						String[] signText = new String[]{
-+							"E\u0337r\u0336r\u0336o\u0336r\u0335_\u03141\u03177\u03143\u0335",
++							"E\u0337r\u0336r\u0336o\u0336r\u0335_173",
 +							"H E L P",
-+							"s\u0337y\u0334s\u0338t\u0335e\u0336m\u0338 \u0317f\u0338a\u0334i\u0335l\u0335",
++							"s\u0337y\u0334s\u0338t\u0335e\u0336m\u0338",
 +							"0x00F173"
 +						};
 +						for (int textIdx = 0; textIdx < 4; ++textIdx) {
