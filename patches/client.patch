@@ -1219,6 +1219,71 @@
 +        }
 +    }
 +}
+--- net/minecraft/src/RenderPlayer.java
++++ net/minecraft/src/RenderPlayer.java
+@@ -104,7 +104,31 @@
+ 			var14 -= 0.125D;
+ 		}
+ 
+-		super.doRenderLiving(var1, var2, var14, var6, var8, var9);
++		double dx = var1.posX - var1.prevPosX;
++		double dy = var1.posY - var1.prevPosY;
++		double dz = var1.posZ - var1.prevPosZ;
++		double speed = Math.sqrt(dx * dx + dy * dy + dz * dz);
++
++		double renderX = var2;
++		double renderY = var14;
++		double renderZ = var6;
++
++		double limit = var1.isSneaking() ? 0.0001D : 0.003D;
++		if (EntityRenderer.isGlitchEnabled && speed > limit) {
++			long t = System.currentTimeMillis();
++			double step = Math.floor((double)t / 80.0D);
++			java.util.Random r = new java.util.Random((long)step);
++
++			double shiftX = -dx * 1.5D + (r.nextDouble() - 0.5D) * 0.4D;
++			double shiftY = -dy * 1.5D + (r.nextDouble() - 0.5D) * 0.2D;
++			double shiftZ = -dz * 1.5D + (r.nextDouble() - 0.5D) * 0.4D;
++
++			renderX += shiftX;
++			renderY += shiftY;
++			renderZ += shiftZ;
++		}
++
++		super.doRenderLiving(var1, renderX, renderY, renderZ, var8, var9);
+ 		this.modelArmorChestplate.aimedBow = this.modelArmor.aimedBow = this.modelBipedMain.aimedBow = false;
+ 		this.modelArmorChestplate.isSneak = this.modelArmor.isSneak = this.modelBipedMain.isSneak = false;
+ 		this.modelArmorChestplate.heldItemRight = this.modelArmor.heldItemRight = this.modelBipedMain.heldItemRight = 0;
+@@ -312,7 +336,28 @@
+ 		GL11.glColor3f(var2, var2, var2);
+ 		this.modelBipedMain.onGround = 0.0F;
+ 		this.modelBipedMain.setRotationAngles(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F / 16.0F, var1);
+-		this.modelBipedMain.bipedRightArm.render(1.0F / 16.0F);
++
++		double dx = var1.posX - var1.prevPosX;
++		double dy = var1.posY - var1.prevPosY;
++		double dz = var1.posZ - var1.prevPosZ;
++		double speed = Math.sqrt(dx * dx + dy * dy + dz * dz);
++
++		double limit = var1.isSneaking() ? 0.0001D : 0.003D;
++		if (EntityRenderer.isGlitchEnabled && speed > limit) {
++			GL11.glPushMatrix();
++			long t = System.currentTimeMillis();
++			double step = Math.floor((double)t / 80.0D);
++			java.util.Random r = new java.util.Random((long)step);
++
++			float ox = (float)((r.nextDouble() - 0.5D) * 0.15D);
++			float oy = (float)((r.nextDouble() - 0.5D) * 0.15D);
++			float oz = (float)((r.nextDouble() - 0.5D) * 0.15D);
++			GL11.glTranslatef(ox, oy, oz);
++			this.modelBipedMain.bipedRightArm.render(1.0F / 16.0F);
++			GL11.glPopMatrix();
++		} else {
++			this.modelBipedMain.bipedRightArm.render(1.0F / 16.0F);
++		}
+ 	}
+ 
+ 	protected void renderPlayerSleep(EntityPlayer var1, double var2, double var4, double var6) {
 --- /dev/null
 +++ net/minecraft/src/EntityTheWatcher.java
 @@ -1,0 +1,48 @@
@@ -3974,7 +4039,79 @@
  	}
  
  	protected abstract IChunkProvider createChunkProvider();
-@@ -1875,6 +1878,9 @@
+@@ -1115,7 +1118,33 @@
+ 			var12 = var12 * (1.0F - var15) + 1.0F * var15;
+ 		}
+ 
+-		return this.getWorldVec3Pool().getVecFromPool((double)var10, (double)var11, (double)var12);
++		double r = (double)var10;
++		double g = (double)var11;
++		double b = (double)var12;
++
++		if (EntityRenderer.isGlitchEnabled) {
++			long time = this.getWorldTime();
++			long mode = (time / 40L) % 2L;
++			if(mode == 0L) {
++				r = Math.sin((double)time * 0.05D) * 0.5D + 0.5D;
++				g = Math.cos((double)time * 0.03D) * 0.5D + 0.5D;
++				b = Math.sin((double)time * 0.07D + 1.0D) * 0.5D + 0.5D;
++			} else {
++				double temp = r;
++				r = g;
++				g = b;
++				b = temp;
++			}
++
++			java.util.Random pRand = new java.util.Random(time / 2L);
++			if(pRand.nextFloat() < 0.15F) {
++				r = (double)pRand.nextFloat();
++				g = (double)pRand.nextFloat();
++				b = (double)pRand.nextFloat();
++			}
++		}
++
++		return this.getWorldVec3Pool().getVecFromPool(r, g, b);
+ 	}
+ 
+ 	public float getCelestialAngle(float var1) {
+@@ -1173,7 +1202,35 @@
+ 
+ 	public Vec3 getFogColor(float var1) {
+ 		float var2 = this.getCelestialAngle(var1);
+-		return this.provider.getFogColor(var2, var1);
++		Vec3 originalFog = this.provider.getFogColor(var2, var1);
++
++		double r = originalFog.xCoord;
++		double g = originalFog.yCoord;
++		double b = originalFog.zCoord;
++
++		if (EntityRenderer.isGlitchEnabled) {
++			long time = this.getWorldTime();
++			long mode = (time / 40L) % 2L;
++			if(mode == 0L) {
++				r = Math.sin((double)time * 0.05D) * 0.5D + 0.5D;
++				g = Math.cos((double)time * 0.03D) * 0.5D + 0.5D;
++				b = Math.sin((double)time * 0.07D + 1.0D) * 0.5D + 0.5D;
++			} else {
++				double temp = r;
++				r = g;
++				g = b;
++				b = temp;
++			}
++
++			java.util.Random pRand = new java.util.Random(time / 2L);
++			if(pRand.nextFloat() < 0.15F) {
++				r = (double)pRand.nextFloat();
++				g = (double)pRand.nextFloat();
++				b = (double)pRand.nextFloat();
++			}
++		}
++
++		return this.getWorldVec3Pool().getVecFromPool(r, g, b);
+ 	}
+ 
+ 	public int getPrecipitationHeight(int var1, int var2) {
+@@ -1875,6 +1932,9 @@
  	}
  
  	public void tick() {
@@ -3986,7 +4123,49 @@
  
 --- net/minecraft/src/EntityRenderer.java
 +++ net/minecraft/src/EntityRenderer.java
-@@ -472,6 +472,7 @@
+@@ -13,6 +13,7 @@
+ import org.lwjgl.util.glu.GLU;
+ 
+ public class EntityRenderer {
++	public static boolean isGlitchEnabled = true;
+ 	public static boolean anaglyphEnable = false;
+ 	public static int anaglyphField;
+ 	private Minecraft mc;
+@@ -267,6 +268,7 @@
+ 		double var4 = var2.prevPosX + (var2.posX - var2.prevPosX) * (double)var1;
+ 		double var6 = var2.prevPosY + (var2.posY - var2.prevPosY) * (double)var1 - (double)var3;
+ 		double var8 = var2.prevPosZ + (var2.posZ - var2.prevPosZ) * (double)var1;
++
+ 		GL11.glRotatef(this.prevCamRoll + (this.camRoll - this.prevCamRoll) * var1, 0.0F, 0.0F, 1.0F);
+ 		if(var2.isPlayerSleeping()) {
+ 			var3 = (float)((double)var3 + 1.0D);
+@@ -339,6 +341,25 @@
+ 		}
+ 
+ 		GL11.glTranslatef(0.0F, var3, 0.0F);
++
++		double dx = var2.posX - var2.prevPosX;
++		double dy = var2.posY - var2.prevPosY;
++		double dz = var2.posZ - var2.prevPosZ;
++		double speed = Math.sqrt(dx * dx + dy * dy + dz * dz);
++		double limit = var2.isSneaking() ? 0.0001D : 0.003D;
++
++		if (isGlitchEnabled && speed > limit) {
++			long t = System.currentTimeMillis();
++			java.util.Random r = new java.util.Random(t / 80L);
++
++			if (r.nextDouble() < 0.35D) {
++				float ox = (float)((r.nextDouble() - 0.2D) * 0.2F);
++				float oy = (float)((r.nextDouble() - 0.2D) * 0.1F);
++				float oz = (float)((r.nextDouble() - 0.2D) * 0.2F);
++				GL11.glTranslatef(ox, oy, oz);
++			}
++		}
++
+ 		var4 = var2.prevPosX + (var2.posX - var2.prevPosX) * (double)var1;
+ 		var6 = var2.prevPosY + (var2.posY - var2.prevPosY) * (double)var1 - (double)var3;
+ 		var8 = var2.prevPosZ + (var2.posZ - var2.prevPosZ) * (double)var1;
+@@ -472,6 +493,7 @@
  		OpenGlHelper.setActiveTexture(OpenGlHelper.lightmapTexUnit);
  		GL11.glDisable(GL11.GL_TEXTURE_2D);
  		OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
@@ -3994,7 +4173,7 @@
  	}
  
  	public void enableLightmap(double var1) {
-@@ -493,6 +494,7 @@
+@@ -493,6 +515,7 @@
  		GL11.glEnable(GL11.GL_TEXTURE_2D);
  		this.mc.renderEngine.resetBoundTexture();
  		OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
@@ -4002,7 +4181,7 @@
  	}
  
  	private void updateTorchFlicker() {
-@@ -640,7 +642,12 @@
+@@ -640,7 +663,12 @@
  
  		this.mc.mcProfiler.startSection("mouse");
  		if(this.mc.inGameHasFocus && var2) {
@@ -4016,7 +4195,7 @@
  			float var3 = this.mc.gameSettings.mouseSensitivity * 0.6F + 0.2F;
  			float var4 = var3 * var3 * var3 * 8.0F;
  			float var5 = (float)this.mc.mouseHelper.deltaX * var4;
-@@ -672,6 +679,9 @@
+@@ -672,6 +700,9 @@
  			int var16 = Mouse.getX() * var14 / this.mc.displayWidth;
  			int var17 = var15 - Mouse.getY() * var15 / this.mc.displayHeight - 1;
  			int var18 = performanceToFps(this.mc.gameSettings.limitFramerate);
@@ -4026,7 +4205,7 @@
  			if(this.mc.theWorld != null) {
  				this.mc.mcProfiler.startSection("level");
  				if(this.mc.gameSettings.limitFramerate == 0) {
-@@ -699,10 +709,10 @@
+@@ -699,10 +730,10 @@
  
  			if(this.mc.currentScreen != null) {
  				GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
@@ -4038,7 +4217,7 @@
  					CrashReport var10 = CrashReport.makeCrashReport(var12, "Rendering screen");
  					CrashReportCategory var11 = var10.makeCategory("Screen render details");
  					var11.addCrashSectionCallable("Screen name", new CallableScreenName(this));
-@@ -716,6 +726,7 @@
+@@ -716,6 +747,7 @@
  				}
  			}
  
@@ -4046,6 +4225,15 @@
  		}
  	}
  
+@@ -739,6 +771,8 @@
+ 		double var7 = var4.lastTickPosX + (var4.posX - var4.lastTickPosX) * (double)var1;
+ 		double var9 = var4.lastTickPosY + (var4.posY - var4.lastTickPosY) * (double)var1;
+ 		double var11 = var4.lastTickPosZ + (var4.posZ - var4.lastTickPosZ) * (double)var1;
++
++
+ 		this.mc.mcProfiler.endStartSection("center");
+ 
+ 		for(int var13 = 0; var13 < 2; ++var13) {
 --- /dev/null
 +++ net/minecraft/src/WavPlaySound.java
 @@ -1,0 +1,64 @@
@@ -5164,6 +5352,20 @@
  		if(this.rightClickDelayTimer > 0) {
  			--this.rightClickDelayTimer;
  		}
+@@ -1271,6 +1220,13 @@
+ 
+ 							if(Keyboard.getEventKey() == Keyboard.KEY_F1) {
+ 								this.gameSettings.hideGUI = !this.gameSettings.hideGUI;
++							}
++
++							if(Keyboard.getEventKey() == Keyboard.KEY_F4) {
++								EntityRenderer.isGlitchEnabled = !EntityRenderer.isGlitchEnabled;
++								if(this.thePlayer != null) {
++									this.ingameGUI.getChatGUI().printChatMessage("\u00a7e[Glitch Effects: " + (EntityRenderer.isGlitchEnabled ? "\u00a7aON" : "\u00a7cOFF") + "\u00a7e]");
++								}
+ 							}
+ 
+ 							if(Keyboard.getEventKey() == Keyboard.KEY_F3) {
 --- /dev/null
 +++ net/minecraft/src/Packet80Event.java
 @@ -1,0 +1,32 @@
