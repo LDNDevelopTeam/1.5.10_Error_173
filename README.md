@@ -61,17 +61,16 @@ Minecraft 1.5.10 Error 173
 ---
 
 ## クレジット
-### コーディング協力、GLSL提供
-- [Pawin](https://github.com/PawinVechanon)  
 
 ### テクスチャ製作者
 - [Test-Alphe](https://github.com/Test-Alphe)  
 
 ### 音
-- 公式サウンド
+- Elevenlabs
+https://elevenlabs.io
 
 ### 一部コード（AI）
-- Claude、Gemini
+- Gemini(Antigravity)
 - など
 
 ### ツール
