@@ -954,7 +954,7 @@
  		}
  
  		if(var1.id == 11) {
-@@ -374,13 +451,14 @@
+@@ -374,15 +451,17 @@
  	}
  
  	public void drawScreen(int var1, int var2, float var3) {
@@ -971,8 +971,25 @@
 +		//this.drawGradientRect(0, 0, this.width, this.height, 0, Integer.MIN_VALUE);
  		this.mc.renderEngine.bindTexture("/title/mclogo.png");
  		GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
++		LogoShaderHelper.useShader();
  		if((double)this.updateCounter < 1.0E-4D) {
-@@ -403,20 +481,89 @@
+ 			this.drawTexturedModalRect(var6 + 0, var7 + 0, 0, 0, 99, 44);
+ 			this.drawTexturedModalRect(var6 + 99, var7 + 0, 129, 0, 27, 44);
+@@ -393,8 +472,13 @@
+ 			this.drawTexturedModalRect(var6 + 0, var7 + 0, 0, 0, 155, 44);
+ 			this.drawTexturedModalRect(var6 + 155, var7 + 0, 0, 45, 155, 44);
+ 		}
++		LogoShaderHelper.releaseShader();
++		if (ShaderHelper.isActive()) {
++			ShaderHelper.useShader(this.mc.displayWidth, this.mc.displayHeight, (float) (Minecraft.getSystemTime() % 1000000L) / 1000.0F);
++		}
+ 
+ 		var4.setColorOpaque_I(16777215);
++		LogoShaderHelper.useShader();
+ 		GL11.glPushMatrix();
+ 		GL11.glTranslatef((float)(this.width / 2 + 90), 70.0F, 0.0F);
+ 		GL11.glRotatef(-20.0F, 0.0F, 0.0F, 1.0F);
+@@ -403,21 +487,99 @@
  		GL11.glScalef(var8, var8, var8);
  		this.drawCenteredString(this.fontRenderer, this.splashText, 0, -8, 16776960);
  		GL11.glPopMatrix();
@@ -994,7 +1011,12 @@
  			this.drawString(this.fontRenderer, this.field_92025_p, this.field_92022_t, this.field_92021_u, 16777215);
  			this.drawString(this.fontRenderer, field_96138_a, (this.width - this.field_92024_r) / 2, ((GuiButton)this.buttonList.get(0)).yPosition - 12, 16777215);
  		}
- 
+-
++		LogoShaderHelper.releaseShader();
++		if (ShaderHelper.isActive()) {
++			ShaderHelper.useShader(this.mc.displayWidth, this.mc.displayHeight, (float) (Minecraft.getSystemTime() % 1000000L) / 1000.0F);
++		}
++
 +		if (this.isQuittingBug) {
 +			long elapsed = System.currentTimeMillis() - this.quitBugStartTime;
 +			
@@ -1062,10 +1084,16 @@
 +			}
 +		}
 +
++		LogoShaderHelper.useShader();
  		super.drawScreen(var1, var2, var3);
++		LogoShaderHelper.releaseShader();
++		if (ShaderHelper.isActive()) {
++			ShaderHelper.useShader(this.mc.displayWidth, this.mc.displayHeight, (float) (Minecraft.getSystemTime() % 1000000L) / 1000.0F);
++		}
  	}
  
-@@ -512,5 +659,57 @@
+ 	protected void mouseClicked(int var1, int var2, int var3) {
+@@ -512,5 +674,57 @@
  	static boolean func_98059_a(boolean var0) {
  		field_96139_s = var0;
  		return var0;
@@ -2302,6 +2330,46 @@
  	}
  
  	public WorldGenerator getRandomWorldGenForTrees(Random var1) {
+--- net/minecraft/src/GuiWinGame.java
++++ net/minecraft/src/GuiWinGame.java
+@@ -6,6 +6,8 @@
+ import java.util.ArrayList;
+ import java.util.List;
+ import java.util.Random;
++
++import net.minecraft.client.Minecraft;
+ import org.lwjgl.opengl.GL11;
+ 
+ public class GuiWinGame extends GuiScreen {
+@@ -132,11 +134,17 @@
+ 		GL11.glTranslatef(0.0F, var8, 0.0F);
+ 		this.mc.renderEngine.bindTexture("/title/mclogo.png");
+ 		GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
++		LogoShaderHelper.useShader();
+ 		this.drawTexturedModalRect(var6, var7, 0, 0, 155, 44);
+ 		this.drawTexturedModalRect(var6 + 155, var7, 0, 45, 155, 44);
++		LogoShaderHelper.releaseShader();
++		if (ShaderHelper.isActive()) {
++			ShaderHelper.useShader(this.mc.displayWidth, this.mc.displayHeight, (float) (Minecraft.getSystemTime() % 1000000L) / 1000.0F);
++		}
+ 		var4.setColorOpaque_I(16777215);
+ 		int var9 = var7 + 200;
+ 
++		LogoShaderHelper.useShader();
+ 		int var10;
+ 		for(var10 = 0; var10 < this.lines.size(); ++var10) {
+ 			if(var10 == this.lines.size() - 1) {
+@@ -157,6 +165,10 @@
+ 			}
+ 
+ 			var9 += 12;
++		}
++		LogoShaderHelper.releaseShader();
++		if (ShaderHelper.isActive()) {
++			ShaderHelper.useShader(this.mc.displayWidth, this.mc.displayHeight, (float) (Minecraft.getSystemTime() % 1000000L) / 1000.0F);
+ 		}
+ 
+ 		GL11.glPopMatrix();
 --- net/minecraft/src/GuiOptions.java
 +++ net/minecraft/src/GuiOptions.java
 @@ -5,6 +5,7 @@
@@ -4234,6 +4302,160 @@
  		this.mc.mcProfiler.endStartSection("center");
  
  		for(int var13 = 0; var13 < 2; ++var13) {
+--- /dev/null
++++ net/minecraft/src/LogoShaderHelper.java
+@@ -1,0 +1,151 @@
++package net.minecraft.src;
++
++import org.lwjgl.opengl.GL11;
++import org.lwjgl.opengl.GL20;
++import java.io.*;
++import java.nio.charset.StandardCharsets;
++
++public class LogoShaderHelper {
++    private static int programId = 0;
++    private static int vertexShaderId = 0;
++    private static int fragmentShaderId = 0;
++    private static boolean initialized = false;
++    private static boolean errorOccurred = false;
++
++    // Effect mode and random seed
++    private static int currentMode = 0;
++    private static float randomSeed = 0.0f;
++    private static long lastModeChange = 0;
++
++    public static void init() {
++        if (initialized || errorOccurred) return;
++        
++        try {
++            String vertSource = loadShaderSource("/glsl/logo.vert", "src/glsl/logo.vert");
++            String fragSource = loadShaderSource("/glsl/logo.frag", "src/glsl/logo.frag");
++            
++            if (vertSource == null || fragSource == null) {
++                System.err.println("[LogoShaderHelper] Failed to load shader source files.");
++                errorOccurred = true;
++                return;
++            }
++            
++            vertexShaderId = GL20.glCreateShader(GL20.GL_VERTEX_SHADER);
++            GL20.glShaderSource(vertexShaderId, vertSource);
++            GL20.glCompileShader(vertexShaderId);
++            checkShaderCompile(vertexShaderId, "Vertex Shader");
++            
++            fragmentShaderId = GL20.glCreateShader(GL20.GL_FRAGMENT_SHADER);
++            GL20.glShaderSource(fragmentShaderId, fragSource);
++            GL20.glCompileShader(fragmentShaderId);
++            checkShaderCompile(fragmentShaderId, "Fragment Shader");
++            
++            programId = GL20.glCreateProgram();
++            GL20.glAttachShader(programId, vertexShaderId);
++            GL20.glAttachShader(programId, fragmentShaderId);
++            GL20.glLinkProgram(programId);
++            
++            int linkStatus = GL20.glGetProgrami(programId, GL20.GL_LINK_STATUS);
++            if (linkStatus == GL11.GL_FALSE) {
++                String log = GL20.glGetProgramInfoLog(programId, 1024);
++                System.err.println("[LogoShaderHelper] Shader program link failed: " + log);
++                errorOccurred = true;
++                return;
++            }
++            
++            initialized = true;
++            System.out.println("[LogoShaderHelper] Logo shader initialized successfully.");
++        } catch (Exception e) {
++            e.printStackTrace();
++            errorOccurred = true;
++        }
++    }
++
++    private static String loadShaderSource(String resourcePath, String fallbackFilePath) {
++        InputStream in = LogoShaderHelper.class.getResourceAsStream(resourcePath);
++        if (in == null) {
++            File file = new File(fallbackFilePath);
++            if (!file.exists()) {
++                file = new File("../" + fallbackFilePath);
++            }
++            if (file.exists()) {
++                try {
++                    in = new FileInputStream(file);
++                } catch (FileNotFoundException ignored) {}
++            }
++        }
++        
++        if (in == null) {
++            return null;
++        }
++        
++        try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
++            StringBuilder sb = new StringBuilder();
++            String line;
++            while ((line = reader.readLine()) != null) {
++                sb.append(line).append("\n");
++            }
++            return sb.toString();
++        } catch (IOException e) {
++            e.printStackTrace();
++        }
++        return null;
++    }
++
++    private static void checkShaderCompile(int shaderId, String shaderType) {
++        int status = GL20.glGetShaderi(shaderId, GL20.GL_COMPILE_STATUS);
++        if (status == GL11.GL_FALSE) {
++            String log = GL20.glGetShaderInfoLog(shaderId, 1024);
++            System.err.println("[LogoShaderHelper] " + shaderType + " compile failed: " + log);
++            errorOccurred = true;
++        }
++    }
++
++    public static boolean isActive() {
++        return initialized && !errorOccurred;
++    }
++
++    public static void useShader() {
++        if (!initialized) {
++            init();
++        }
++        if (!initialized || errorOccurred) return;
++        
++        GL20.glUseProgram(programId);
++        
++        long now = System.currentTimeMillis();
++        // Change mode every 4 seconds (4000 ms)
++        if (now - lastModeChange > 4000) {
++            lastModeChange = now;
++            // 6 modes: 0, 1, 2, 3, 4, 5
++            currentMode = (int) (Math.random() * 6);
++            randomSeed = (float) Math.random();
++        }
++
++        // Pass uniforms
++        int locTime = GL20.glGetUniformLocation(programId, "u_time");
++        if (locTime != -1) {
++            GL20.glUniform1f(locTime, (float) (now % 1000000L) / 1000.0F);
++        }
++        
++        int locMode = GL20.glGetUniformLocation(programId, "u_mode");
++        if (locMode != -1) {
++            GL20.glUniform1i(locMode, currentMode);
++        }
++
++        int locSeed = GL20.glGetUniformLocation(programId, "u_seed");
++        if (locSeed != -1) {
++            GL20.glUniform1f(locSeed, randomSeed);
++        }
++        
++        int locTex = GL20.glGetUniformLocation(programId, "u_texture");
++        if (locTex != -1) {
++            GL20.glUniform1i(locTex, 0); // texture unit 0
++        }
++    }
++
++    public static void releaseShader() {
++        if (!initialized || errorOccurred) return;
++        GL20.glUseProgram(0);
++    }
++}
 --- /dev/null
 +++ net/minecraft/src/WavPlaySound.java
 @@ -1,0 +1,64 @@
